@@ -1,23 +1,23 @@
 /*
-  Ally Toolkit 1.0. Copyright 2010-2011 McKayla Washburn.
+  Ally Toolkit 1.1. Copyright 2010-2011 McKayla Washburn.
 */
 
 (function () {
     var ally = function (b) { return q(b) };
 
-    ally.version = 1.0;
-    ally.build = 200;
+    ally.version = 1.1;
+    ally.build = 59;
     ally.copyright = "Copyright 2010-2011 McKayla Washburn.";
     ally.integrity = ['bf5sd8bn6519sd89b8n4sd2f1b6dbd'];
 
     var q = function (selector) {
         if (selector === "body") {
             var elements = [document.body];
-            ally.methods(elements);
+            elements = ally.methods(elements);
             return elements;
-        } else if (selector) {
-            var elements = document.querySelectorAll(selector);
-            ally.methods(elements);
+        } else if (ally.type(selector) === 'string') {
+            var elements = ally.merge([[], document.querySelectorAll(selector)]);
+            elements = ally.methods(elements);
             return elements;
         } else {
             return ally.version;
@@ -35,113 +35,107 @@
     pl = {
         add: function (type, selector) {
             var $me = {};
-            if (this) {
-                $me.newElements = [];
-                if (!type) {
-                    $me.parenttype = this[0].tagName;
-                    if ($me.parenttype === "BODY") {
-                        type = 'div';
-                    } else if ($me.parenttype === "P" || $me.parenttype === "A" || $me.parenttype === "SPAN") {
-                        type = 'span';
-                    } else {
-                        type = 'p';
+            if (!type) {
+                $me.parenttype = this[0].tagName;
+                if ($me.parenttype === "BODY") {
+                    type = 'div';
+                } else if ($me.parenttype === "P" || $me.parenttype === "A" || $me.parenttype === "SPAN") {
+                    type = 'span';
+                } else {
+                    type = 'p';
+                }
+            }
+            $me.returned = [];
+            this.forEach(function(element, index){
+                $me.returned[index] = document.createElement(type);
+                element.appendChild($me.returned[index]);
+                if (selector) {
+                    if (selector[0] === "#") {
+                        if (index === 0) {
+                            $me.returned[index].id = selector.replace('#', '');
+                        } else {
+                            $me.returned[index].id = selector.replace('#', '') + "-" + index;
+                        }
+                    }
+                    if (selector[0] === ".") {
+                        $me.returned[index].className = selector.replace('.', '');
                     }
                 }
-                $me.returned = ally.forEach(this, function (selected, position) {
-                    $me.elm = document.createElement(type);
-                    selected.appendChild($me.elm);
-                    if (selector) {
-                        if (selector.indexOf('#') === 0) {
-                            if (position === 0) {
-                                $me.elm.id = selector.replace('#', '');
-                            } else {
-                                $me.elm.id = selector.replace('#', '') + "-" + position;
-                            }
-                        }
-                        if (selector.indexOf('.') === 0) {
-                            $me.elm.className = selector.replace('.', '');
-                        }
-                    }
-                    return $me.elm;
-                });
-                ally.methods($me.newElements);
-                return ally.dev.returnArray($me.returned);
-            } else {
-                return ally.dev.noelems;
-            }
+            });
+            return $me.returned;
         },
 
         remove: function () {
-            ally.forEach(this, function (selected) {
-                selected.parentNode.removeChild(selected);
+            this.forEach(function (element) {
+                element.parentNode.removeChild(element);
             });
+            return [];
         },
 
         html: function (html, callback) {
             var $me = {};
+            $me.returned = [];
             if (html) {
-                $me.returned = ally.forEach(this, function (selected) {
-                    selected.innerHTML = html;
-                    return selected.innerHTML;
+                this.forEach(function (element, index) {
+                    $me.returned[index] = element.innerHTML = html;
                 });
             } else {
-                $me.returned = ally.forEach(this, function (selected) {
-                    return selected.innerHTML;
+                this.forEach(function (element, index) {
+                    $me.returned[index] = element.innerHTML;
                 });
             }
             if (ally.type(callback) === 'function') {
                 callback();
             }
-            return ally.dev.returnArray($me.returned);
+            return $me.returned;
         },
 
         value: function (value, callback) {
             var $me = {};
+            $me.returned = [];
             if (value) {
-                $me.returned = ally.forEach(this, function (selected) {
-                    selected.value = value;
-                    return selected.value;
+                this.forEach(function (element, index) {
+                    $me.returned[index] = element.value = value;
                 });
             } else {
-                $me.returned = ally.forEach(this, function (selected) {
-                    return selected.value;
+                this.forEach(function (element, index) {
+                    $me.returned[index] = element.value;
                 });
             }
             if (ally.type(callback) === 'function') {
                 callback();
             }
-            return ally.dev.returnArray($me.returned);
+            return $me.returned;
         },
 
         empty: function (callback) {
             var $me = {};
-            $me.returned = ally.forEach(this, function (selected) {
-                selected.innerHTML = "";
-                return selected.innerHTML;
+            $me.returned = [];
+            this.forEach(function (element, index) {
+                $me.returned[index] = element.innerHTML = "";
             });
             if (ally.type(callback) === 'function') {
                 callback();
             }
-            return ally.dev.returnArray($me.returned);
+            return $me.returned;
         },
 
         attr: function (attribute, value, callback) {
             var $me = {};
             if (attribute) {
+                $me.returned = [];
                 if (value) {
-                    $me.returned = ally.forEach(this, function (selected) {
-                        selected.setAttribute(attribute, value);
-                        return selected.getAttribute(attribute);
-                    });
-                } else {
-                    $me.returned = ally.forEach(this, function (selected) {
-                        return selected.getAttribute(attribute);
+                    this.forEach(function (element) {
+                        element.setAttribute(attribute, value);
                     });
                 }
+                this.forEach(function (element, index) {
+                    $me.returned[index] = element.getAttribute(attribute);
+                });
                 if (ally.type(callback) === 'function') {
                     callback();
                 }
-                return ally.dev.returnArray($me.returned);
+                return $me.returned;
             } else {
                 return ally.dev.noargs;
             }
@@ -150,14 +144,15 @@
         removeAttr: function (attribute, callback) {
             var $me = {};
             if (attribute) {
-                $me.returned = ally.forEach(this, function (selected) {
-                    selected.removeAttribute(attribute);
-                    return selected.getAttribute(attribute);
+                $me.returned = [];
+                this.forEach(function (element, index) {
+                    element.removeAttribute(attribute);
+                    $me.returned[index] = element.getAttribute(attribute);
                 });
                 if (ally.type(callback) === 'function') {
                     callback();
                 }
-                return ally.dev.returnArray($me.returned);
+                return $me.returned;
             } else {
                 return ally.dev.noargs;
             }
@@ -165,26 +160,23 @@
 
         classes: function (callback) {
             var $me = {};
-            $me.returned = ally.forEach(this, function (selected) {
-                return selected.className;
-            });
+            $me.returned = this.attr('className');
             if (ally.type(callback) === 'function') {
                 callback();
             }
-            return ally.dev.returnArray($me.returned);
+            return $me.returned;
         },
 
         addClass: function (newclass, callback) {
             var $me = {};
             if (newclass) {
-                $me.returned = ally.forEach(this, function (selected) {
-                    selected.className = selected.className + " " + newclass;
-                    return selected.className;
+                this.forEach(function (element, index) {
+                    element.setAttribute('className', element.getAttribute('className') + " " + newclass);
                 });
                 if (ally.type(callback) === 'function') {
                     callback();
                 }
-                return ally.dev.returnArray($me.returned)
+                return this.classes();
             } else {
                 return ally.dev.noargs;
             }
@@ -194,9 +186,9 @@
             var $me = {};
             if (this) {
                 if (removingclass) {
-                    $me.returned = ally.forEach(this, function (selected) {
-                        selected.className = selected.className.replace(removingclass, '');
-                        return selected.className;
+                    this.forEach(function (element, index) {
+                        element.className = element.className.replace(removingclass, '');
+                        return this.classes();
                     });
                     if (ally.type(callback) === 'function') {
                         callback();
@@ -215,91 +207,82 @@
             if (!priority) {
                 priority = "";
             }
-            if (this) {
-                if (property) {
-                    if (value) {
-                        $me.returned = ally.forEach(this, function (selected) {
-                            selected.style.setProperty(property, value, priority);
-                            return selected.style.getPropertyValue(property);
-                        });
-                    } else {
-                        $me.returned = ally.forEach(this, function (selected) {
-                            return window.getComputedStyle(selected, null).getPropertyValue(property);
-                        });
-                    }
-                    if (ally.type(callback) === 'function') {
-                        callback();
-                    }
-                    return ally.dev.returnArray($me.returned);
-                } else {
-                    return ally.dev.noargs;
+            if (property) {
+                $me.returned = [];
+                if (value) {
+                    this.forEach(function (element) {
+                        element.style.setProperty(property, value, priority);
+                        // return selected.style.getPropertyValue(property);
+                    });
                 }
+                this.forEach(function (element, index) {
+                    $me.returned[index] = window.getComputedStyle(element, null).getPropertyValue(property);
+                });
+                if (ally.type(callback) === 'function') {
+                    callback();
+                }
+                return $me.returned;
             } else {
-                return ally.dev.noelems;
+                return ally.dev.noargs;
             }
         },
 
         removeProperty: function (property, callback) {
             var $me = {};
-            if (this) {
-                if (property) {
-                    $me.returned = ally.forEach(this, function (selected) {
-                        return selected.style.removeProperty(property);
-                    });
-                    if (ally.type(callback) === 'function') {
-                        callback();
-                    }
-                    return ally.dev.returnArray($me.returned);
-                } else {
-                    return ally.dev.noargs;
+            if (property) {
+                $me.returned = [];
+                this.forEach(function (element, index) {
+                    element.style.removeProperty(property);
+                    $me.returned[index] = null;
+                });
+                if (ally.type(callback) === 'function') {
+                    callback();
                 }
+                return $me.returned;
             } else {
-                return ally.dev.noelems;
+                return ally.dev.noargs;
             }
         },
 
-        animate: function (property, value, callback) {
+        animate: function (property, value, priority, callback) {
             var $me = {};
-            if (this) {
-                if (property) {
-                    if (value) {
-                        $me.calledProperty = property;
-                        $me.calledValue = value;
-                        if (window.getComputedStyle(this[0], null).getPropertyValue(property)) {
-                            $me.originalvalue = parseFloat(window.getComputedStyle(this[0], null).getPropertyValue(property));
-                        } else {
-                            $me.originalvalue = 0;
-                        }
-                        $me.unit = value.replace(parseFloat(value), '');
-                        $me.value = parseFloat(value);
-                        if ($me.originalvalue < $me.value) {
-                            $me.distanceperframe = ($me.value - $me.originalvalue) / 60 + 1;
-                            $me.newvalue = Math.round($me.originalvalue) + Math.round($me.distanceperframe);
-                            this.css(property, $me.newvalue + $me.unit);
-                        } else if ($me.originalvalue > $me.value) {
-                            $me.distanceperframe = ($me.originalvalue - $me.value) / 60 + 1;
-                            $me.newvalue = Math.round($me.originalvalue) - Math.round($me.distanceperframe);
-                            this.css(property, $me.newvalue + $me.unit);
-                        }
-                        if ($me.originalvalue != $me.value) {
-                            var elements = this;
-                            setTimeout(function () {
-                                elements.animate($me.calledProperty, $me.calledValue)
-                            }, 10);
-                            return value;
-                        } else {
-                            if (ally.type(callback) === 'function') {
-                                callback();
-                            }
-                        }
+            if (property) {
+                if (value) {
+                    if (this[0].style.getPropertyValue(property)) {
+                        $me.originalvalue = parseFloat(this[0].style.getPropertyValue(property));
                     } else {
-                        return ally.dev.noargs;
+                        $me.originalvalue = parseFloat(this.css(property)[0]);
+                    }
+                    $me.extra = value.replace(parseFloat(value), 'VALUE');
+                    $me.value = parseFloat(value);
+
+                    if ($me.originalvalue < $me.value) {
+                        $me.distanceperframe = ($me.value - $me.originalvalue) / 60 + 1;
+                        $me.newvalue = Math.round($me.originalvalue) + Math.round($me.distanceperframe);
+                    } else if ($me.originalvalue > $me.value) {
+                        $me.distanceperframe = ($me.originalvalue - $me.value) / 60 + 1;
+                        $me.newvalue = Math.round($me.originalvalue) - Math.round($me.distanceperframe);
+                    } else {
+                        return [value];
+                    }
+                    $me.newvalue = $me.extra.replace('VALUE', $me.newvalue);
+                    this.css(property, $me.newvalue);
+                    if ($me.newvalue != value) {
+                        var elements = this;
+                        setTimeout(function () {
+                            elements.animate(property, value)
+                        }, 10);
+                        return [value];
+                    } else {
+                        if (ally.type(callback) === 'function') {
+                            callback();
+                        }
                     }
                 } else {
                     return ally.dev.noargs;
                 }
             } else {
-                return ally.dev.noelems;
+                return ally.dev.noargs;
             }
         },
 
@@ -356,13 +339,14 @@
             if (!capture) {
                 capture = false;
             }
-            $me.returned = ally.forEach(this, function (selected) {
-                return selected.addEventListener(event, script, capture);
+            $me.returned = [];
+            this.forEach(function (element, index) {
+                $me.returned[index] = element.addEventListener(event, script, capture);
             });
             if (ally.type(callback) === 'function') {
                 callback();
             }
-            return ally.dev.returnArray($me.returned);
+            return $me.returned;
         },
 
         open: function (url, method, async, callback) {
@@ -383,46 +367,9 @@
     ally.pl = {};
 
     ally.dev = {
-        returnArray: function (statement) {
-            if (!ally.config.returnonly0 && (!ally.check(ally.config.returnx) && !ally.config.returnlast)) {
-                return statement;
-            } else if (ally.check(ally.config.returnx)) {
-                return statement[ally.config.returnx];
-            } else if (ally.config.returnlast) {
-                return statement[statement.length - 1];
-            } else {
-                return statement[0];
-            }
-        },
         noelems: "No elements selected.",
         noargs: "Not enough arguments.",
         invalidargs: "Invalid arguments."
-    };
-
-    ally.config = {
-        returnonly0: false,
-        returnlast: false,
-        returnx: false
-    };
-
-    ally.forEach = function (array, code) {
-        if (array) {
-            if (code) {
-                var position = 0;
-                var returnedarray = [];
-                while (array[position]) {
-                    var selected = array[position];
-                    var returned = code(selected, position);
-                    returnedarray[position] = returned;
-                    position++;
-                }
-                return returnedarray;
-            } else {
-                return ally.dev.noargs;
-            }
-        } else {
-            return ally.dev.noargs;
-        }
     };
 
     ally.retrieve = function (url, method, async, callback) {
@@ -562,15 +509,16 @@
 
     ally.fuse = function (values, callback) {
         var $me = {};
-        $me.start = 0;
         if (ally.type(values) === 'array') {
-            ally.forEach(values[0], function () {
-                $me.start++;
+            $me.returned = [];
+            values.forEach(function (array) {
+                if (ally.type(array) === 'array') {
+                    array.forEach(function (value) {
+                        $me.returned.push(value);
+                    });
+                }
             });
-            ally.forEach(values[1], function (selected, position) {
-                values[0][position + $me.start] = selected;
-            });
-            return values[0];
+            return $me.returned;
         } else if (values) {
             return ally.dev.invalidargs;
         } else {
@@ -579,10 +527,11 @@
     };
 
     ally.merge = function (values, callback) {
+        var $me = {};
         if (ally.type(values) === 'array') {
-            ally.forEach(values, function (selected) {
-                for (prop in selected) {
-                    values[0][prop] = selected[prop];
+            values.forEach(function (object) {
+                for (prop in object) {
+                    values[0][prop] = object[prop];
                 }
             });
             return values[0];
@@ -665,15 +614,6 @@
         }
     };
 
-    ally.backwards = function (callback) {
-        ally.methods(ally);
-        ally.get = q;
-        if (ally.type(callback) === 'function') {
-            callback();
-        }
-        return ally;
-    };
-
     (function () {
         var $me = {};
         $me.ua = navigator.userAgent;
@@ -748,16 +688,6 @@
             ally.mobile = true;
         }
     })()
-
-    ally.features = {
-        flash: (function () {
-            if (ally.type(navigator.plugins.namedItem) === 'function') {
-                return !!navigator.plugins.namedItem('Shockwave Flash')
-            } else {
-                return false;
-            }
-        })()
-    }
 
     window.$ = window.ally = ally;
 
