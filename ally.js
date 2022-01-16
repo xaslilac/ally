@@ -1,63 +1,55 @@
-// Ally Selector and Toolkit;
-// v0.6.130;
+// Ally Toolkit;
+// v0.7.74;
 
 // Copyright 2010 McKayla Washburn;
 // Development started on August 30th 2010;
-// This toolkit has been tested in Chrome 6, Opera 10.5, and Firefox 3.6;
-// If compatibility is your first priority you may want to consider Dojo at http://www.dojotoolkit.org/;
+// This toolkit has been tested in Internet Explorer 9, Safari 4, Chrome 6, Opera 10.5, and Firefox 3.6;
 // Other browser's and previous versions of these browser are not guarenteed to work correctly;
-// This toolkit DOES NOT work in Internet Explorer;
 
 var ally = new Object();
-ally.local = localStorage;
-ally.version = 0.6;
-ally.build = 130;
+ally.storage = localStorage;
+ally.version = 0.7;
+ally.build = 74;
 ally.fs = new Object();
 ally.Initial = function () {
     if (document.readyState == "complete") {
         if (ally.onload) {
             ally.onload();
         }
-        ally.browser();
-        ally.os();
         clearInterval(ally.InitialInterval);
     }
 };
 ally.InitialInterval = setInterval('ally.Initial();', 50);
+ally.config = new Object;
+ally.config.useSizzle;
 ally.get = function (selector) {
     if (selector) {
         ally.selector = selector;
-        if (ally.selector.indexOf(':') != -1) {
-            numberstart = ally.selector.indexOf(':');
-            numberlength = ally.selector.length - numberstart - 1;
-            if (numberlength == 1) {
-                ally.elementnum = ally.selector[numberstart + 1];
-                ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+        ally.fs.selector = new Object;
+        if (ally.selector.lastIndexOf(':') != -1) {
+            ally.fs.selector.numberstart = ally.selector.lastIndexOf(':');
+            ally.fs.selector.numberlength = ally.selector.length - ally.fs.selector.numberstart - 1;
+            if (ally.fs.selector.numberlength == 1) {
+                ally.fs.selector.elementnumber = ally.selector[ally.fs.selector.numberstart + 1];
+                ally.selector = ally.selector.replace(':' + ally.fs.selector.elementnumber, '');
             }
-            if (numberlength == 2) {
-                ally.elementnum = ally.selector[numberstart + 1] + ally.selector[numberstart + 2];
-                ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+            if (ally.fs.selector.numberlength == 2) {
+                ally.fs.selector.elementnumber = ally.selector[ally.fs.selector.numberstart + 1] + ally.selector[ally.fs.selector.numberstart + 2];
+                ally.selector = ally.selector.replace(':' + ally.fs.selector.elementnumber, '');
             }
-            if (numberlength == 3) {
-                ally.elementnum = ally.selector[numberstart + 1] + ally.selector[numberstart + 2] + ally.selector[numberstart + 3];
-                ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+            if (ally.fs.selector.numberlength == 3) {
+                ally.fs.selector.elementnumber = ally.selector[ally.fs.selector.numberstart + 1] + ally.selector[ally.fs.selector.numberstart + 2] + ally.selector[ally.fs.selector.numberstart + 3];
+                ally.selector = ally.selector.replace(':' + ally.fs.selector.elementnumber, '');
             }
-            ally.elementnum = parseFloat(ally.elementnum);
+            ally.fs.selector.elementnumber = parseFloat(ally.fs.selector.elementnumber);
         } else {
-            ally.elementnum = 0;
+            ally.fs.selector.elementnumber = 0;
         }
-        if (ally.selector.indexOf('.') == 0) {
-            ally.selector = ally.selector.replace('.', '');
-            ally.element = document.getElementsByClassName(ally.selector)[ally.elementnum];
-            ally.selector = "." + ally.selector;
-        } else if (ally.selector.indexOf('#') == 0) {
-            ally.selector = ally.selector.replace('#', '');
-            ally.element = document.getElementById(ally.selector);
-            ally.selector = "#" + ally.selector;
-        } else if (ally.selector.indexOf('*') == 0) {
-            ally.element = document.getElementsByTagName('body')[0];
-        } else {
-            ally.element = document.getElementsByTagName(ally.selector)[ally.elementnum];
+        if (!ally.config.useSizzle) {
+            ally.elementarray = document.querySelectorAll(ally.selector);
+            ally.element = document.querySelectorAll(ally.selector)[ally.fs.selector.elementnumber];
+        } else if (ally.config.useSizzle) {
+            ally.element = Sizzle(ally.selector)[ally.fs.selector.elementnumber];
         }
         return ally;
     } else {
@@ -65,28 +57,29 @@ ally.get = function (selector) {
     }
 };
 ally.add = function (type, selector) {
+    ally.fs.add = new Object();
     if (type) {
         ally.NewElement = document.createElement(type);
         ally.element.appendChild(ally.NewElement);
         if (selector) {
             if (selector.indexOf('#') != -1) {
-                selector = selector.replace('#', '');
-                ally.NewElement.id = selector;
+                ally.fs.add.selector = selector.replace('#', '');
+                ally.NewElement.id = ally.fs.add.selector;
             }
             if (selector.indexOf('.') != -1) {
-                selector = selector.replace('.', '');
-                ally.NewElement.className = " " + selector;
+                ally.fs.add.selector = selector.replace('.', '');
+                ally.NewElement.className = " " + ally.fs.add.selector;
             }
         }
     } else {
-        var parenttype = ally.element.tagName;
-        if (parenttype == "BODY") {
+        ally.fs.add.parenttype = ally.element.tagName;
+        if (ally.fs.add.parenttype == "BODY") {
             ally.NewElement = document.createElement('div');
         }
-        if (parenttype == "DIV") {
+        if (ally.fs.add.parenttype == "DIV") {
             ally.NewElement = document.createElement('p');
         }
-        if (parenttype == "P" || parenttype == "A" || parenttype == "SPAN") {
+        if (ally.fs.add.parenttype == "P" || ally.fs.add.parenttype == "A" || ally.fs.add.parenttype == "SPAN") {
             ally.NewElement = document.createElement('span');
         }
         ally.element.appendChild(ally.NewElement);
@@ -94,8 +87,9 @@ ally.add = function (type, selector) {
 };
 ally.remove = function () {
     if (ally.element) {
-        parent = ally.element.parentNode;
-        parent.removeChild(ally.element);
+        ally.fs.remove = new Object();
+        ally.fs.remove.parent = ally.element.parentNode;
+        ally.fs.remove.parent.removeChild(ally.element);
     } else {
         return "No element defined";
     }
@@ -152,11 +146,11 @@ ally.storeAs = function (key) {
     if (ally.element) {
         if (key) {
             if (!ally.element.value) {
-                ally.local.setItem(key, ally.element.innerHTML);
-                return ally.local.getItem(key);
+                ally.storage.setItem(key, ally.element.innerHTML);
+                return ally.storage.getItem(key);
             } else {
-                ally.local.setItem(key, ally.element.value);
-                return ally.local.getItem(key);
+                ally.storage.setItem(key, ally.element.value);
+                return ally.storage.getItem(key);
             }
         } else {
             return "Please define a key to store the HTML as.";
@@ -180,7 +174,7 @@ ally.css = function (property, value) {
             }
         }
     } else {
-        return "No element to read.";
+        return "No element to read."
     }
 };
 ally.animate = function (property, value) {
@@ -198,12 +192,12 @@ ally.animate = function (property, value) {
                 ally.fs.animate.unit = value.replace(parseFloat(value), '');
                 ally.fs.animate.value = parseFloat(value);
                 if (ally.fs.animate.originalvalue < ally.fs.animate.value) {
-                    ally.fs.animate.distanceperframe = (ally.fs.animate.value - ally.fs.animate.originalvalue) / 60;
+                    ally.fs.animate.distanceperframe = (ally.fs.animate.value - ally.fs.animate.originalvalue) / 60 + 1;
                     ally.fs.animate.newvalue = Math.round(ally.fs.animate.originalvalue) + Math.round(ally.fs.animate.distanceperframe);
                     ally.element.style.setProperty(property, ally.fs.animate.newvalue + ally.fs.animate.unit);
                     setTimeout('ally.animate(ally.fs.animate.calledProperty,ally.fs.animate.calledValue)', 10);
                 } else if (ally.fs.animate.originalvalue > ally.fs.animate.value) {
-                    ally.fs.animate.distanceperframe = (ally.fs.animate.value + ally.fs.animate.originalvalue) / 60;
+                    ally.fs.animate.distanceperframe = (ally.fs.animate.value + ally.fs.animate.originalvalue) / 60 + 1;
                     ally.fs.animate.newvalue = Math.round(ally.fs.animate.originalvalue) - Math.round(ally.fs.animate.distanceperframe);
                     ally.element.style.setProperty(property, ally.fs.animate.newvalue + ally.fs.animate.unit);
                     setTimeout('ally.animate(ally.fs.animate.calledProperty,ally.fs.animate.calledValue)', 10);
@@ -212,16 +206,16 @@ ally.animate = function (property, value) {
                 return "This is for animating CSS changes. If you want t retrieve a CSS value then please use ally.css.";
             }
         } else {
-            return "Please define a property.";
+            return "Please define a property."
         }
     } else {
-        return "No element to read.";
+        return "No element to read."
     }
 };
-ally.addClass = function (class) {
+ally.addClass = function (newclass) {
     if (ally.element) {
-        if (class) {
-            ally.element.className = ally.element.className + " " + class;
+        if (newclass) {
+            ally.element.className = ally.element.className + " " + newclass;
             return ally.element.className;
         } else {
             return "Please define a class.";
@@ -230,9 +224,9 @@ ally.addClass = function (class) {
         return "No element to read."
     }
 };
-ally.removeClass = function (class) {
-    if (class) {
-        ally.element.className = ally.element.className.replace(class, '');
+ally.removeClass = function (newclass) {
+    if (newclass) {
+        ally.element.className = ally.element.className.replace(newclass, '');
         return ally.element.className;
     } else {
         return "Please define a class.";
@@ -319,80 +313,75 @@ ally.openOther = function () {
     }
 };
 ally.time = function (useAMPM) {
-    d = new Date();
-    hours = d.getHours();
-    minutes = d.getMinutes();
-    ampm = '';
-    if (hours == 0) {
-        hours = 24;
+    ally.fs.time = new Object;
+    ally.fs.time.d = new Date();
+    ally.fs.time.hours = ally.fs.time.d.getHours();
+    ally.fs.time.minutes = ally.fs.time.d.getMinutes();
+    ally.fs.time.ampm = '';
+    if (ally.fs.time.hours == 0) {
+        ally.fs.time.hours = 24;
     }
-    if (hours < 12 && useAMPM) {
-        ampm = ' AM';
+    if (ally.fs.time.hours < 12 && useAMPM) {
+        ally.fs.time.ampm = ' AM';
     }
-    if (hours > 12 && useAMPM) {
-        hours = hours - 12;
-        ampm = ' PM';
+    if (ally.fs.time.hours > 12 && useAMPM) {
+        ally.fs.time.hours = ally.fs.time.hours - 12;
+        ally.fs.time.ampm = ' PM';
     }
-    if (minutes < 10) {
-        minutes = "0" + minutes;
+    if (ally.fs.time.minutes < 10) {
+        ally.fs.time.minutes = "0" + ally.fs.time.minutes;
     }
-    return hours + ":" + minutes + ampm;
+    return ally.fs.time.hours + ":" + ally.fs.time.minutes + ally.fs.time.ampm;
 };
 ally.date = function () {
-    day = new Date().getDay();
-    days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    month = new Date().getMonth();
-    months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    date = new Date().getDate();
-    year = new Date().getFullYear();
-    return days[day] + ', ' + months[month] + ' ' + date + ' ' + year;
+    ally.fs.date = new Object;
+    ally.fs.date.d = new Date();
+    ally.fs.date.day = ally.fs.date.d.getDay();
+    ally.fs.date.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    ally.fs.date.month = ally.fs.date.d.getMonth();
+    ally.fs.date.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    ally.fs.date.date = ally.fs.date.d.getDate();
+    ally.fs.date.year = ally.fs.date.d.getFullYear();
+    return ally.fs.date.days[ally.fs.date.day] + ', ' + ally.fs.date.months[ally.fs.date.month] + ' ' + ally.fs.date.date + ' ' + ally.fs.date.year;
 };
-ally.browser = function () {
-    UA = navigator.userAgent;
-    Chrome = UA.indexOf('Chrome');
-    Firefox = UA.indexOf('Firefox');
-    Opera = UA.indexOf('Opera');
-    Safari = UA.indexOf('Safari');
-    IE = UA.indexOf('MSIE');
-    Version = UA.indexOf('Version');
-    if (Chrome != -1) {
-        ally.chrome = UA[Chrome + 7] + UA[Chrome + 8] + UA[Chrome + 9] + UA[Chrome + 10] + UA[Chrome + 11] + UA[Chrome + 12] + UA[Chrome + 13] + UA[Chrome + 14] + UA[Chrome + 15] + UA[Chrome + 16];
-        return "Chrome " + ally.chrome;
-    }
-    if (Firefox != -1) {
-        ally.firefox = UA[Firefox + 8] + UA[Firefox + 9] + UA[Firefox + 10];
-        return "Firefox " + ally.firefox;
-    }
-    if (Opera != -1) {
-        ally.opera = UA[Version + 8] + UA[Version + 9] + UA[Version + 10] + UA[Version + 11];
-        return "Opera " + ally.opera;
-    }
-    if (UA.indexOf('Safari') != -1 && UA.indexOf('Chrome') == -1) {
-        ally.safari = UA[Version + 8] + UA[Version + 9] + UA[Version + 10];
-        return "Safari " + ally.safari;
-    }
-    if (IE != -1) {
-        ally.ie = UA[IE + 5];
-        return "Internet Explorer" + ally.ie;
-    }
-};
-ally.os = function () {
-    UA = navigator.userAgent;
-    Windows = UA.indexOf('Windows NT');
-    Mac = UA.indexOf('Mac OS X');
-    iPhone = UA.indexOf('iPhone OS');
-    if (Windows != -1) {
-        ally.windows = UA[Windows + 11] + UA[Windows + 12] + UA[Windows + 13];
-        return "Windows " + ally.windows;
-    }
-    if (Mac != -1 && iPhone == -1) {
-        ally.mac = UA[Mac + 9] + UA[Mac + 10] + UA[Mac + 11] + UA[Mac + 12] + UA[Mac + 13] + UA[Mac + 14];
-        return "Mac OS X " + ally.mac;
-    }
-    if (iPhone != -1) {
-        ally.iPhone = UA[iPhone + 10] + UA[iPhone + 11] + UA[iPhone + 12];
-        return "iPhone OS" + ally.iPhone;
-    }
-};
+ally.ua = navigator.userAgent;
+ally.chrome = ally.ua.indexOf('Chrome');
+ally.firefox = ally.ua.indexOf('Firefox');
+ally.opera = ally.ua.indexOf('Opera');
+ally.safari = ally.ua.indexOf('Safari');
+ally.ie = ally.ua.indexOf('MSIE');
+ally.browerversion = ally.ua.indexOf('Version');
+if (ally.chrome != -1) {
+    ally.chrome = ally.ua[ally.chrome + 7] + ally.ua[ally.chrome + 8] + ally.ua[ally.chrome + 9] + ally.ua[ally.chrome + 10] + ally.ua[ally.chrome + 11] + ally.ua[ally.chrome + 12] + ally.ua[ally.chrome + 13] + ally.ua[ally.chrome + 14] + ally.ua[ally.chrome + 15] + ally.ua[ally.chrome + 16];
+}
+if (ally.firefox != -1) {
+    ally.firefox = ally.ua[ally.firefox + 8] + ally.ua[ally.firefox + 9] + ally.ua[ally.firefox + 10];
+}
+if (ally.opera != -1) {
+    ally.opera = ally.ua[ally.browserversion + 8] + ally.ua[ally.browserversion + 9] + ally.ua[ally.browserversion + 10] + ally.ua[ally.browserversion + 11];
+}
+if (ally.safari != -1 && ally.chrome == -1) {
+    ally.safari = ally.ua[ally.browserversion + 8] + ally.ua[ally.browserversion + 9] + ally.ua[ally.browserversion + 10];
+}
+if (ally.ie != -1) {
+    ally.ie = ally.ua[ally.ie + 5];
+}
+ally.windows = ally.ua.indexOf('Windows NT');
+ally.mac = ally.ua.indexOf('Mac OS X');
+ally.iPhone = ally.ua.indexOf('iPhone OS');
+ally.iPad = ally.ua.indexOf('iPad');
+ally.iPadVersion = ally.ua.indexOf('CPU OS');
+if (ally.windows != -1) {
+    ally.windows = ally.ua[ally.windows + 11] + ally.ua[ally.windows + 12] + ally.ua[ally.windows + 13];
+}
+if (ally.mac != -1 && ally.iPhone == -1 && ally.iPad == -1) {
+    ally.mac = ally.ua[ally.mac + 9] + ally.ua[ally.mac + 10] + ally.ua[ally.mac + 11] + ally.ua[ally.mac + 12] + ally.ua[ally.mac + 13] + ally.ua[ally.mac + 14];
+}
+if (ally.iPhone != -1) {
+    ally.iPhone = ally.ua[ally.iPhone + 10] + ally.ua[ally.iPhone + 11] + ally.ua[ally.iPhone + 12];
+}
+if (ally.iPad != -1) {
+    ally.iPad = ally.ua[ally.iPadVersion + 7] + ally.ua[ally.iPadVersion + 8] + ally.ua[ally.iPadVersion + 9];
+}
 ally.timeOnPage = 0;
 setInterval('ally.timeOnPage++;', 1000);
