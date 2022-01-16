@@ -1,694 +1,893 @@
 /*
-  Ally Toolkit 1.1. Copyright 2010-2011 McKayla Washburn.
+  Ally Toolkit 1.2. Copyright 2011.
 */
 
-(function () {
-    var ally = function (b) { return q(b) };
+(function (window) {
+    // Browser detection. (Incase we need it in this function, we make sure it goes first.)
+    ( function (navigator) {
+        // Let's save the useragent for quicker access.
+        var ua = navigator.userAgent;
 
-    ally.version = 1.1;
-    ally.build = 59;
-    ally.copyright = "Copyright 2010-2011 McKayla Washburn.";
-    ally.integrity = ['bf5sd8bn6519sd89b8n4sd2f1b6dbd'];
+        // Create a variable to store the version and the browser name index.
+        var i;
+        var i2; // Special cases require this.
+        var v;
 
-    var q = function (selector) {
-        if (selector === "body") {
-            var elements = [document.body];
-            elements = ally.methods(elements);
-            return elements;
-        } else if (ally.type(selector) === 'string') {
-            var elements = ally.merge([[], document.querySelectorAll(selector)]);
-            elements = ally.methods(elements);
-            return elements;
-        } else {
-            return ally.version;
+        // Check the most popular desktop browsers.
+        // Is it Chrome?
+        i = ua.indexOf('Chrome');
+        if (i > -1) {
+            v = ua.slice(i + 7, i + 17);
+            navigator.Chrome = v;
+        }
+
+        // Is it Firefox?
+        i = ua.indexOf('Firefox');
+        if (i > -1) {
+            v = ua.substring(i + 8);
+            navigator.Firefox = v;
+        }
+
+        // Is it Safari?
+        i = ua.indexOf('Safari');
+        if (i > -1 && ua.indexOf('Chrome') === -1) {
+            i2 = ua.indexOf('Version');
+            v = ua.slice(i2 + 8, i - 1);
+            navigator.Safari = v;
+        }
+
+        // Is it Opera?
+        i = ua.indexOf('Opera');
+        if (i > -1) {
+            i2 = ua.indexOf('Version');
+            v = ua.substring(i2 + 8);
+            navigator.Opera = v;
+        }
+
+        // Now check for iOS devices.
+        i = ua.indexOf('like Mac OS X');
+        if (i > -1) {
+            i2 = ua.indexOf('OS');
+            v = ua.slice(i2 + 3, i - 1);
+            navigator.iOS = v;
+            if (ua.indexOf('iPhone') > -1) navigator.iPhone = true;
+            if (ua.indexOf('iPod') > -1) navigator.iPod = true;
+            if (ua.indexOf('iPad') > -1) navigator.iPad = true;
+        }
+
+        // Now check for Mac's.
+        i = ua.indexOf('Intel Mac OS X');
+        if (i > -1) {
+            i2 = ua.substring(i).indexOf(';');
+            v = ua.slice(i + 15, i + i2);
+            navigator.Mac = v;
+        }
+
+        // Check for Windows.
+        i = ua.indexOf('Windows NT');
+        if (i > -1) {
+            i2 = ua.substring(i).indexOf(';');
+            v = ua.slice(i + 11, i + i2);
+            navigator.Windows = v;
+        }
+    } )(navigator);
+
+    // Define a non-global version of ally for use inside this function.
+    var ally;
+
+    // Make it a function.
+    ally = function (b) { return q(b) };
+
+    // Define some basic information about Ally.
+    ally.version = 1.2;
+    ally.build = 243.1;
+    ally.copyright = 2011;
+
+    // Make the q selector function.
+    var q = function () {
+        var b = arguments[0];
+        if (b) {
+            if (b === 'body') return [document.body].extend(ally);
+            else if (b === 'head') return [document.head].extend(ally);
+            else if (b === window) return [b].extend(ally);
+            else if (b.type === "String") return document.querySelectorAll(b).extend(ally);
+            else if (b.type === "Array") return b.extend(ally);
+            else if (b.type === "Object") return [b].extend(ally);
+        }
+        return ally;
+    };
+
+    var is = function () {
+        var item = arguments[0];
+        if (item || item === 0) return true; else return false;
+    };
+
+    // Make it global.
+    window.is = is;
+
+    // Make it mine.
+    ally.is = is;
+
+    // Make the global data storage object.
+    ally.data = {};
+
+    // And the localStorage shortcut.
+    ally.local = localStorage;
+
+    // Create document.head.
+    document.head = document.getElementsByTagName('head')[0];
+
+    // Mess around with document's element selectors for a minute.
+    document.byId = function () { return document.getElementById.apply(document, arguments) };
+    document.byClass = function () { return document.getElementsByClassName.apply(document, arguments) };
+    document.byTag = function () { return document.getElementsByTagName.apply(document, arguments) };
+    document.byQuery = function () { return document.querySelectorAll.apply(document, arguments) };
+
+    // Make a shortcut to document.
+    window.doc = document;
+
+    // Why not do it for window too?
+    window.win = window;
+
+    // Lets mess around a bit with the prototypes.
+    // Now I'm gonna build a replacement for ally.type.
+    Object.prototype.type = "Object";
+    HTMLElement.prototype.type = "HTMLElement";
+    XMLHttpRequest.prototype.type = "XMLHttpRequest";
+    Number.prototype.type = "Number";
+    Function.prototype.type = "Function";
+    RegExp.prototype.type = "RegExp";
+    Array.prototype.type = "Array";
+    String.prototype.type = "String";
+    Boolean.prototype.type = "Boolean";
+    NodeList.prototype.type = "NodeList";
+
+    // Replace the default forEach loop with my slightly customized one.
+    Object.prototype.forEach = function(fun /*, thisp */) {
+        if (this === void 0 || this === null)
+            throw new TypeError();
+
+        var t = Object(this);
+        var len = t.length >>> 0;
+        if (typeof fun !== "function")
+            throw new TypeError();
+
+        var returned = [];
+        var thisp = arguments[1];
+        for (var i = 0; i < len; i++) {
+            if (i in t)
+                returned[i] = fun.call(thisp, t[i], i, t);
+        }
+        return returned;
+    };
+
+    // Add the extend method to objects.
+    Object.prototype.extend  = function () {
+        // Save the object and the callback for quicker access.
+        var object = arguments[0];
+        var callback = arguments[1];
+
+        // Make the current object the object that the properties are applied to.
+        var returned = this;
+
+        // Apply the objects properties to the object.
+        for (prop in object) {
+            returned[prop] = object[prop];
+        }
+
+        // Run the callback.
+        if (callback) if (callback.Function) callback();
+
+        // Return the new object.
+        return returned;
+    };
+
+    // Add fuse to Arrays.
+    Array.prototype.fuse = function () {
+        // Save the arrays and the callback for quicker access.
+        var arrays = arguments[0];
+        var callback = arguments[1];
+
+        // Make the current array, the array that the values are pushed to.
+        var returned = [];
+
+        // Push all the values.
+        arrays.forEach(function (array) {
+            array.forEach(function (value) {
+                returned.push(value);
+            });
+        });
+
+        // Run the callback.
+        if (callback) if (callback.Function) callback();
+
+        // Return the new array.
+        return returned;
+    };
+
+    // Add merge to objects and arrays.
+    Object.prototype.merge = function () {
+        // Save the objects and the callback for quicker access.
+        var objects = arguments[0];
+        var callback = arguments[1];
+
+        // Create a new object to apply the properties to.
+        var returned = {};
+
+        // Apply the objects properties to the new object.
+        objects.forEach(function (object) {
+            for (prop in object) {
+                returned[prop] = object[prop];
+            }
+        });
+
+        // Run the callback.
+        if (callback) if (callback.Function) callback();
+
+        // Return the new object.
+        return returned;
+    };
+
+    // Create the onloadtasks array.
+    ally.data.onloadtasks = [];
+
+    // Create the ally.onload function.
+    ally.extend({
+        onload: function () {
+            // Write the function to the data object.
+            ally.data.onloadtasks.push(arguments[0]);
+            return ally.data.onloadtasks;
+        },
+        ready: ally.onload
+    });
+
+    // Make the function that will actually run those.
+    var init = function () {
+        // Check if the document is ready.
+        if (document.readyState === "complete") {
+            // Run the functions.
+            ally.data.onloadtasks.forEach(function (statement) {
+                statement();
+            });
+
+            // Delete init to prevent the functions from running again.
+            delete init;
+        }
+        else {
+            // If the document isn't ready, check again later.
+            setTimeout(init, 10);
         }
     };
 
-    ally.methods = function (target) {
-        ally.merge([target, ally.pl]);
-        ally.merge([target, pl]);
-        return target;
-    }
+    // Now run it.
+    init();
 
-    ally.local = localStorage;
+    // Add and remove elements.
+    ally.extend({
+        add: function () {
+            // Save the type, selector, and calback for quicker access.
+            var type = arguments [0];
+            var selector = arguments[1];
+            var callback = arguments[2];
 
-    pl = {
-        add: function (type, selector) {
-            var $me = {};
+            // Make an empty retuned array just to be safe.
+            var returned = [];
+
+            // Adjust the type.
             if (!type) {
-                $me.parenttype = this[0].tagName;
-                if ($me.parenttype === "BODY") {
-                    type = 'div';
-                } else if ($me.parenttype === "P" || $me.parenttype === "A" || $me.parenttype === "SPAN") {
-                    type = 'span';
-                } else {
-                    type = 'p';
-                }
+                var parenttype = this[0].tagName;
+                if (parenttype === 'BODY') type = 'div';
+                if (parenttype === 'DIV') type = 'p';
+                else type = 'span';
             }
-            $me.returned = [];
-            this.forEach(function(element, index){
-                $me.returned[index] = document.createElement(type);
-                element.appendChild($me.returned[index]);
+
+            // Make the elements, asign the selectors and move them in.
+            var returned = this.forEach(function (parent, index) {
+                var element = document.createElement(type);
+                parent.appendChild(element);
+
                 if (selector) {
                     if (selector[0] === "#") {
-                        if (index === 0) {
-                            $me.returned[index].id = selector.replace('#', '');
-                        } else {
-                            $me.returned[index].id = selector.replace('#', '') + "-" + index;
-                        }
+                        if (index === 0) element.id = selector.replace('#','');
+                        else element.id = selector.replace('#','') + "-" + index;
                     }
                     if (selector[0] === ".") {
-                        $me.returned[index].className = selector.replace('.', '');
+                        element.className = selector.replace('.','');
                     }
                 }
+
+                return element;
             });
-            return $me.returned;
+
+            // Return the new elements.
+            return returned;
         },
 
         remove: function () {
-            this.forEach(function (element) {
+            // Remove the element.
+            var returned = this.forEach(function (element) {
                 element.parentNode.removeChild(element);
             });
-            return [];
-        },
+        }
+    });
 
-        html: function (html, callback) {
-            var $me = {};
-            $me.returned = [];
+    // HTML manipulation methods.
+    ally.extend({
+        html: function () {
+            // Save the desired HTML for quicker access.
+            var html = arguments[0];
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Check if the HTML should change.
             if (html) {
-                this.forEach(function (element, index) {
-                    $me.returned[index] = element.innerHTML = html;
-                });
-            } else {
-                this.forEach(function (element, index) {
-                    $me.returned[index] = element.innerHTML;
+                // Change it.
+                var returned = this.forEach(function (element) {
+                    return element.innerHTML = html;
                 });
             }
-            if (ally.type(callback) === 'function') {
-                callback();
+            else {
+                // Just return it.
+                var returned = this.forEach(function (element) {
+                    return element.innerHTML;
+                });
             }
-            return $me.returned;
+
+            // Return the HTML.
+            return returned;
         },
 
-        value: function (value, callback) {
-            var $me = {};
-            $me.returned = [];
+        value: function () {
+            // Save the desired value for quicker access.
+            var value = arguments[0];
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Check if the value should change.
             if (value) {
-                this.forEach(function (element, index) {
-                    $me.returned[index] = element.value = value;
-                });
-            } else {
-                this.forEach(function (element, index) {
-                    $me.returned[index] = element.value;
+                // Change it.
+                var returned = this.forEach(function (element) {
+                    return element.value = value;
                 });
             }
-            if (ally.type(callback) === 'function') {
-                callback();
+            else {
+                // Just return it.
+                var returned = this.forEach(function (element) {
+                    return element.value;
+                });
             }
-            return $me.returned;
+
+            // Return the value.
+            return returned;
         },
 
-        empty: function (callback) {
-            var $me = {};
-            $me.returned = [];
-            this.forEach(function (element, index) {
-                $me.returned[index] = element.innerHTML = "";
+        empty: function () {
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Change the HTML/value.
+            var returned = this.forEach(function (element) {
+                element.innerHTML = "";
+                element.value = "";
+                return "";
             });
-            if (ally.type(callback) === 'function') {
-                callback();
-            }
-            return $me.returned;
-        },
 
-        attr: function (attribute, value, callback) {
-            var $me = {};
-            if (attribute) {
-                $me.returned = [];
-                if (value) {
+            // Return the HTML/value.
+            return returned;
+        }
+    });
+
+    ally.extend({
+        attr: function () {
+            // Save the attribute and value for quicker access.
+            var attribute = arguments[0];
+            var value = arguments[1];
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Check if the attribute should be changed.
+            if (value) {
+                // Change it.
+                if (this[0].setAttribute) {
                     this.forEach(function (element) {
                         element.setAttribute(attribute, value);
                     });
                 }
-                this.forEach(function (element, index) {
-                    $me.returned[index] = element.getAttribute(attribute);
-                });
-                if (ally.type(callback) === 'function') {
-                    callback();
-                }
-                return $me.returned;
-            } else {
-                return ally.dev.noargs;
-            }
-        },
-
-        removeAttr: function (attribute, callback) {
-            var $me = {};
-            if (attribute) {
-                $me.returned = [];
-                this.forEach(function (element, index) {
-                    element.removeAttribute(attribute);
-                    $me.returned[index] = element.getAttribute(attribute);
-                });
-                if (ally.type(callback) === 'function') {
-                    callback();
-                }
-                return $me.returned;
-            } else {
-                return ally.dev.noargs;
-            }
-        },
-
-        classes: function (callback) {
-            var $me = {};
-            $me.returned = this.attr('className');
-            if (ally.type(callback) === 'function') {
-                callback();
-            }
-            return $me.returned;
-        },
-
-        addClass: function (newclass, callback) {
-            var $me = {};
-            if (newclass) {
-                this.forEach(function (element, index) {
-                    element.setAttribute('className', element.getAttribute('className') + " " + newclass);
-                });
-                if (ally.type(callback) === 'function') {
-                    callback();
-                }
-                return this.classes();
-            } else {
-                return ally.dev.noargs;
-            }
-        },
-
-        removeClass: function (removingclass, callback) {
-            var $me = {};
-            if (this) {
-                if (removingclass) {
-                    this.forEach(function (element, index) {
-                        element.className = element.className.replace(removingclass, '');
-                        return this.classes();
-                    });
-                    if (ally.type(callback) === 'function') {
-                        callback();
-                    }
-                    return ally.dev.returnArray($me.returned);
-                } else {
-                    return ally.dev.noargs;
-                }
-            } else {
-                return ally.dev.noelems;
-            }
-        },
-
-        css: function (property, value, priority, callback) {
-            var $me = {};
-            if (!priority) {
-                priority = "";
-            }
-            if (property) {
-                $me.returned = [];
-                if (value) {
+                else {
                     this.forEach(function (element) {
-                        element.style.setProperty(property, value, priority);
-                        // return selected.style.getPropertyValue(property);
+                        element[attribute] = value;
                     });
                 }
-                this.forEach(function (element, index) {
-                    $me.returned[index] = window.getComputedStyle(element, null).getPropertyValue(property);
+            }
+
+            // Now return it.
+            var returned = this.forEach(function (element) {
+                return element[attribute];
+            });
+            return returned;
+        },
+
+        removeAttr: function () {
+            // Save the attribute for quicker access.
+            var attribute = arguments[0];
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Delete the attribute.
+            if (this[0].removeAttribute) {
+                var returned = this.forEach(function (element) {
+                    element.removeAttribute(attribute);
+                    return element.getAttribute(attribute);
                 });
-                if (ally.type(callback) === 'function') {
-                    callback();
-                }
-                return $me.returned;
-            } else {
-                return ally.dev.noargs;
             }
-        },
-
-        removeProperty: function (property, callback) {
-            var $me = {};
-            if (property) {
-                $me.returned = [];
-                this.forEach(function (element, index) {
-                    element.style.removeProperty(property);
-                    $me.returned[index] = null;
+            else {
+                var returned = this.forEach(function (element) {
+                    delete element[attribute];
+                    return element[attribute];
                 });
-                if (ally.type(callback) === 'function') {
-                    callback();
-                }
-                return $me.returned;
-            } else {
-                return ally.dev.noargs;
             }
+
+            // Return the attributes.
+            return returned;
+        }
+    });
+
+    ally.extend({
+        classes: function () {
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Get the classes and return them.
+            var returned = this.forEach(function (element) {
+                return element.className;
+            });
+            return returned;
         },
 
-        animate: function (property, value, priority, callback) {
-            var $me = {};
-            if (property) {
-                if (value) {
-                    if (this[0].style.getPropertyValue(property)) {
-                        $me.originalvalue = parseFloat(this[0].style.getPropertyValue(property));
-                    } else {
-                        $me.originalvalue = parseFloat(this.css(property)[0]);
-                    }
-                    $me.extra = value.replace(parseFloat(value), 'VALUE');
-                    $me.value = parseFloat(value);
+        addClass: function () {
+            // Save the new class(es) for quicker access.
+            var add = arguments[0];
 
-                    if ($me.originalvalue < $me.value) {
-                        $me.distanceperframe = ($me.value - $me.originalvalue) / 60 + 1;
-                        $me.newvalue = Math.round($me.originalvalue) + Math.round($me.distanceperframe);
-                    } else if ($me.originalvalue > $me.value) {
-                        $me.distanceperframe = ($me.originalvalue - $me.value) / 60 + 1;
-                        $me.newvalue = Math.round($me.originalvalue) - Math.round($me.distanceperframe);
-                    } else {
-                        return [value];
-                    }
-                    $me.newvalue = $me.extra.replace('VALUE', $me.newvalue);
-                    this.css(property, $me.newvalue);
-                    if ($me.newvalue != value) {
-                        var elements = this;
-                        setTimeout(function () {
-                            elements.animate(property, value)
-                        }, 10);
-                        return [value];
-                    } else {
-                        if (ally.type(callback) === 'function') {
-                            callback();
-                        }
-                    }
-                } else {
-                    return ally.dev.noargs;
-                }
-            } else {
-                return ally.dev.noargs;
-            }
+            // Add it/them.
+            this.forEach(function (element) {
+                element.className = element.className + " " + add;
+            });
+
+            // Return the classes.
+            return this.classes();
         },
 
-        hide: function (callback) {
-            var $me = {};
-            this.css('display', 'block');
+        removeClass: function () {
+            // Save the class(es) for quicker access.
+            var remove = arguments[0];
+
+            // Remove it/them.
+            this.forEach(function (element) {
+                element.className = element.className.replace(remove,'');
+            });
+
+            // Return the classes.
+            return this.classes();
+        }
+    });
+
+    ally.extend({
+        css: function () {
+            // Save the property, value, and priority for quicker access.
+            var property = arguments[0];
+            var value = arguments[1];
+            var priority = arguments[2];
+
+            // Adjust the priority.
+            if (priority === undefined) priority = "";
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Check if the property should be changed.
+            if (value) {
+                // Change it.
+                this.forEach(function (element) {
+                    element.style.setProperty(property, value, priority);
+                });
+            }
+
+            // Now return it.
+            var returned = this.forEach(function (element) {
+                if (element.style.getPropertyValue(property)) {
+                    return element.style.getPropertyValue(property);
+                }
+                else {
+                    return getComputedStyle(element).getPropertyValue(property);
+                }
+            });
+            return returned;
+        },
+
+        removeProperty: function () {
+            // Save the property.
+            var property = arguments[0];
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Remove the property.
+            this.forEach(function (element) {
+                element.style.removeProperty(property);
+            });
+
+            // Return it.
+            return this.css(property);
+        },
+
+        hide: function () {
+            // Save the time and the callback for quicker access.
+            var time = arguments[0];
+            var callback = arguments[0];
+
+            // If there's no time then default it.
+            if (!time) time = 300;
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Maximize the settings in case it's already hidden.
+            this.css('display', 'block')
             this.css('opacity', '1');
+
+            // Figure out what the delay for the interval should be to match the specified time.
+            var delay = time / 10;
+
+            // Save the elements, because this would return window inside the interval.
             var elements = this;
-            $me.interval = setInterval(function () {
-                elements.css('opacity', parseFloat(elements.css('opacity')) - 0.1);
-                if (ally.type(elements.css('opacity')) === 'string') {
-                    if (parseFloat(elements.css('opacity')) <= '0.1') {
-                        elements.css('display', 'none');
-                        clearInterval($me.interval);
-                    }
-                } else if (ally.type(elements.css('opacity')) === 'array') {
-                    if (parseFloat(elements.css('opacity')[0]) <= 0.1) {
-                        elements.css('display', 'none');
-                        clearInterval($me.interval);
-                        if (ally.type(callback) === 'function') {
-                            callback();
-                        }
-                    }
+
+            // Do the animating.
+            var animation = setInterval(function () {
+                var current = parseFloat(elements.css('opacity')[0]);
+                if (current >= 0.15) {
+                    elements.css('opacity', current - 0.1);
                 }
-            }, 100)
+                else {
+                    elements.css('opacity', '0');
+                    elements.css('display', 'none');
+                    clearInterval(animation);
+                }
+            }, delay);
+
+            if (callback) if (callback.Function) callback();
         },
 
-        show: function (callback) {
-            var $me = {};
-            this.css('display', 'block');
-            this.css('opacity', '0.1');
+        show: function () {
+            // Save the time and the callback for quicker access.
+            var time = arguments[0];
+            var callback = arguments[0];
+
+            // If there's no time then default it.
+            if (!time) time = 300;
+
+            // Make an empty returned array just to be safe.
+            var returned = [];
+
+            // Minimize the settings in case it's already visible.
+            this.css('display', 'block')
+            this.css('opacity', '0');
+
+            // Figure out what the delay for the interval should be to match the specified time.
+            var delay = time / 10;
+
+            // Save the elements, because this would return window inside the interval.
             var elements = this;
-            $me.interval = setInterval(function () {
-                elements.css('opacity', parseFloat(elements.css('opacity')) + 0.1);
-                if (ally.type(elements.css('opacity')) === 'string') {
-                    if (elements.css('opacity') >= 0.9) {
-                        elements.css('opacity', '1');
-                        clearInterval($me.interval);
-                    }
-                } else if (ally.type(elements.css('opacity')) === 'array') {
-                    if (parseFloat(elements.css('opacity')[0]) >= 0.9) {
-                        elements.css('opacity', '1');
-                        clearInterval($me.interval);
-                        if (ally.type(callback) === 'function') {
-                            callback();
-                        }
-                    }
+
+            // Do the animating.
+            var animation = setInterval(function () {
+                var current = parseFloat(elements.css('opacity')[0]);
+                if (current <= 0.85) {
+                    elements.css('opacity', current + 0.1);
                 }
-            }, 100)
+                else {
+                    elements.css('opacity', '1');
+                    clearInterval(animation);
+                }
+            }, delay);
+
+            if (callback) if (callback.Function) callback();
+        }
+    });
+
+    ally.extend({
+        event: function () {
+            // Save the event type, the listener and useCapture for quicker access.
+            var event = arguments[0];
+            var listener = arguments[1];
+            var capture = arguments[2];
+
+            // Adjust.
+            if (capture === undefined) capture = false;
+
+            // Add the listeners.
+            var returned = this.forEach(function (element) {
+                element.addEventListener(event, listener, capture);
+                return event;
+            });
+
+            // Return the events.
+            return returned;
+        }
+    });
+
+    ally.extend({
+        absolute: function () {
+            // Save the number for quicker access.
+            var number = arguments[0];
+
+            // Check if it's already positive.
+            if (number >= 0) return number;
+
+            // Or return the negative as a positive.
+            else return number * -1;
         },
 
-        event: function (event, script, capture, callback) {
-            var $me = {};
-            if (!capture) {
-                capture = false;
-            }
-            $me.returned = [];
-            this.forEach(function (element, index) {
-                $me.returned[index] = element.addEventListener(event, script, capture);
-            });
-            if (ally.type(callback) === 'function') {
-                callback();
-            }
-            return $me.returned;
+        opposite: function () {
+            // Return the number times -1.
+            return arguments[0] * -1;
         },
 
-        open: function (url, method, async, callback) {
-            xml = ally.retrieve(url, method, async);
-            var elements = this;
-            var xmlInterval = setInterval(function () {
-                if (xml.statusText === 'OK' || xml.status === 200) {
-                    elements.html(xml.responseText);
-                    clearInterval(xmlInterval);
-                    if (ally.type(callback) === 'function') {
-                        callback();
-                    }
-                }
-            }, 500);
-        }
-    }
+        average: function () {
+            // Save the numbers for quicker access.
+            var numbers = arguments[0];
 
-    ally.pl = {};
+            // Create the number we'll do the math on.
+            var average = 0;
 
-    ally.dev = {
-        noelems: "No elements selected.",
-        noargs: "Not enough arguments.",
-        invalidargs: "Invalid arguments."
-    };
-
-    ally.retrieve = function (url, method, async, callback) {
-        if (!url) {
-            return ally.dev.noargs;
-        }
-        if (!method) {
-            method = "GET";
-        }
-        if (!async) {
-            async = false;
-        }
-        var xml = new XMLHttpRequest();
-        xml.open(method, url, async);
-        xml.send();
-        var xmlInterval = setInterval(function () {
-            if (xml.status === 200) {
-                if (ally.type(callback) === 'function') {
-                    callback();
-                }
-                clearInterval(xmlInterval);
-            } else if (xml.status === 404) {
-                console.log("Sorry. :( I couldn't load the file you wanted. (" + xml.status + ')');
-                clearInterval(xmlInterval);
-            }
-        }, 500);
-        return xml;
-    };
-
-    ally.script = function (url, method, async, callback) {
-        xml = ally.retrieve(url, method, async);
-        var xmlInterval = setInterval(function () {
-            if (xml.status === 200) {
-                eval(xml.responseText);
-                clearInterval(xmlInterval);
-                if (ally.type(callback) === 'function') {
-                    callback();
-                }
-            }
-        }, 500);
-        return xml;
-    };
-
-    ally.keys = {
-        enable: function () {
-            ally('body').event('keydown', function () {
-                if (ally.keys[event.keyCode]) {
-                    if (!event.shiftKey) {
-                        if (ally.type(ally.keys[event.keyCode].down) === 'function') {
-                            ally.keys[event.keyCode].down();
-                        }
-                    } else {
-                        if (ally.type(ally.keys[event.keyCode].shift.down) === 'function') {
-                            ally.keys[event.keyCode].shift.down();
-                        }
-                    }
-                }
-                if (ally.keys.all) {
-                    if (ally.type(ally.keys.all.down) === 'function') {
-                        ally.keys.all.down();
-                    }
-                }
+            // Add all the numbers.
+            numbers.forEach(function (value) {
+                average = average + value;
             });
-            ally('body').event('keyup', function () {
-                if (ally.keys[event.keyCode]) {
-                    if (!event.shiftKey) {
-                        if (ally.type(ally.keys[event.keyCode].up) === 'function') {
-                            ally.keys[event.keyCode].up();
-                        }
-                    } else {
-                        if (ally.type(ally.keys[event.keyCode].shift.up) === 'function') {
-                            ally.keys[event.keyCode].shift.up();
+
+            // Divid it by the number of numbers added and return the average.
+            return average / numbers.length;
+        },
+
+        random: function () {
+            // Save the minimum and maximum for quicker access.
+            var min = parseInt(arguments[0]);
+            var max = parseInt(arguments[1]);
+
+            // Adjust them.
+            if (!min) min = 0;
+            if (!max || max < min) max = min + 10;
+
+            // Make a random number.
+            var random = Math.random();
+
+            // Find the range.
+            var range = max - min;
+
+            // Make the random number fit that.
+            random = random * range;
+
+            // Round it if you want.
+            if (arguments[2]) random = Math.round(random);
+
+            // Push the number into the range and return the random number.
+            return random + min;
+        }
+    });
+
+    ally.extend({
+        retrieve: function () {
+            // Save the URL, method, headers, async setting, and callback for quicker access.
+            var url = arguments[0];
+            var method = arguments[1];
+            var headers = arguments[2];
+            var async = arguments[3];
+            var callback = arguments[4];
+
+            // Adjust.
+            if (!method) method = "POST";
+            if (!async) async = true;
+
+            // Build and send a request.
+            var xml = new XMLHttpRequest();
+            xml.open(method, url, async);
+            xml.send(headers);
+
+            // Set the callback.
+            if (callback) if (callback.Function) ally(xml).event('load', function () { callback(); });
+
+            // Return the XML.
+            return xml;
+        },
+
+        open: function () {
+            // Save the URL, method, headers, async setting, and callback for quicker access.
+            var url = arguments[0];
+            var method = arguments[1];
+            var headers = arguments[2];
+            var async = arguments[3];
+            var callback = arguments[4];
+
+            // Adjust.
+            if (!method) method = "POST";
+            if (!async) async = true;
+
+            // Build and send a request.
+            var xml = new XMLHttpRequest();
+            xml.open(method, url, async);
+            xml.send(headers);
+
+            // Change the HTML.
+            this.forEach(function (element) {
+                element.innerHTML = xml.responseText;
+            });
+
+            // Set the callback.
+            if (callback) if (callback.Function) ally(xml).event('load', function () { callback(); });
+
+            // Return the XML.
+            return xml;
+        },
+
+        script: function () {
+            // Save the URL for quicker access.
+            var url = arguments[0];
+            var callback = arguments[1];
+
+            // Create a new script element.
+            var script = document.createElement('script');
+
+            // Give it a source.
+            script.src = url;
+
+            // Now put it in the head so it will load.
+            document.head.appendChild(script);
+
+            if (callback && callback.Function) callback();
+
+            // Return the new element.
+            return script;
+        },
+
+        stylesheet: function () {
+            // Save the URL and media type for quicker access.
+            var url = arguments[0];
+            var media = arguments[1];
+
+            // Adjust the media.
+            if (!media) media = "all";
+
+            // Create a new style element.
+            var style = document.createElement('style');
+
+            // Set the URL and media.
+            style.innerHTML = "@import url('" + url + "') " + media + ";";
+
+            // Put it in the head so it will load.
+            document.head.appendChild(style);
+
+            return style;
+        }
+    });
+
+    ally.keys = {};
+
+    ally.onload(function () {
+        // Key down event.
+        ally('body').event('keydown', function (event) {
+            // A specific key.
+            if (ally.keys[event.keyCode]) {
+                // Key + shift.
+                if (event.shiftKey) {
+                    if (ally.keys[event.keyCode].shift) {
+                        if (ally.keys[event.keyCode].shift.down) {
+                            if (ally.keys[event.keyCode].shift.down.type === "Function") {
+                                ally.keys[event.keyCode].shift.down();
+                            }
                         }
                     }
                 }
-                if (ally.keys.all) {
-                    if (ally.type(ally.keys.all.up) === 'function') {
-                        ally.keys.all.up();
+                // Just the key.
+                else if (ally.keys[event.keyCode].down) {
+                    if (ally.keys[event.keyCode].down.type === "Function") {
+                        ally.keys[event.keyCode].down();
                     }
                 }
-            })
-        }
-    }
-
-    ally.absolute = function (number, callback) {
-        if (number) {
-            if (ally.type(callback) === 'function') {
-                callback();
             }
-            if (number < 0) {
-                return number * -1;
-            } else {
-                return number;
-            }
-        }
-    };
-
-    ally.opposite = function (number, callback) {
-        if (ally.type(callback) === 'function') {
-            callback();
-        }
-        if (number) {
-            return number * -1;
-        }
-    };
-
-    ally.average = function (numbers, callback) {
-        var $me = {};
-        if (ally.type(numbers) === 'array') {
-            $me.position = 0;
-            $me.total = 0;
-            ally.forEach(numbers, function (selected) {
-                $me.total = $me.total + selected;
-            });
-            if (ally.type(callback) === 'function') {
-                callback();
-            }
-            return $me.total / numbers.length;
-        } else if (numbers) {
-            return ally.dev.invalidargs;
-        } else {
-            return ally.dev.noargs;
-        }
-    };
-
-    ally.random = function (beginning, end) {
-        if (!beginning || ally.type(beginning) != 'number') {
-            beginning = 0;
-        }
-        if (!end || ally.type(end) != 'number' || end <= beginning) {
-            end = beginning + 100;
-        }
-        var $me = {};
-        $me.range = end - beginning;
-        return $me.random = Math.round((Math.random() * $me.range) + beginning);
-    };
-
-    ally.fuse = function (values, callback) {
-        var $me = {};
-        if (ally.type(values) === 'array') {
-            $me.returned = [];
-            values.forEach(function (array) {
-                if (ally.type(array) === 'array') {
-                    array.forEach(function (value) {
-                        $me.returned.push(value);
-                    });
+            // All keys.
+            if (ally.keys['all']) {
+                // Key + shift.
+                if (event.shiftKey) {
+                    if (ally.keys['all'].shift) {
+                        if (ally.keys['all'.shift.down]) {
+                            if (ally.keys['all'].shift.down.type === "Function") {
+                                ally.keys['all'].shift.down();
+                            }
+                        }
+                    }
                 }
-            });
-            return $me.returned;
-        } else if (values) {
-            return ally.dev.invalidargs;
-        } else {
-            return ally.dev.noargs;
-        }
-    };
-
-    ally.merge = function (values, callback) {
-        var $me = {};
-        if (ally.type(values) === 'array') {
-            values.forEach(function (object) {
-                for (prop in object) {
-                    values[0][prop] = object[prop];
+                // Just a key.
+                else if (ally.keys['all'].down) {
+                    if (ally.keys['all'].down.type === "Function") {
+                        ally.keys['all'].down();
+                    }
                 }
-            });
-            return values[0];
-        } else if (values) {
-            return ally.dev.invalidargs;
-        } else {
-            return ally.dev.noargs;
-        }
-    };
+            }
+        });
+        // Key up event.
+        ally('body').event('keyup', function (event) {
+            // A specific key.
+            if (ally.keys[event.keyCode]) {
+                // Key + shift.
+                if (event.shiftKey) {
+                    if (ally.keys[event.keyCode].shift) {
+                        if (ally.keys[event.keyCode].shift.up) {
+                            if (ally.keys[event.keyCode].shift.up.type === "Function") {
+                                ally.keys[event.keyCode].shift.up();
+                            }
+                        }
+                    }
+                }
+                // Just the key.
+                else if (ally.keys[event.keyCode].up) {
+                    if (ally.keys[event.keyCode].up.type === "Function") {
+                        ally.keys[event.keyCode].up();
+                    }
+                }
+            }
+            // All keys.
+            if (ally.keys['all']) {
+                // Key + shift.
+                if (event.shiftKey) {
+                    if (ally.keys['all'].shift) {
+                        if (ally.keys['all'.shift.up]) {
+                            if (ally.keys['all'].shift.up.type === "Function") {
+                                ally.keys['all'].shift.up();
+                            }
+                        }
+                    }
+                }
+                // Just a key.
+                else if (ally.keys['all'].up) {
+                    if (ally.keys['all'].up.type === "Function") {
+                        ally.keys['all'].up();
+                    }
+                }
+            }
+        });
+    });
 
-    ally.type = function (string) {
-        if (!ally.check(string)) {
-            return undefined;
-        }
-        if (string.constructor === String) {
-            return 'string';
-        }
-        if (string.constructor === Number) {
-            return 'number';
-        }
-        if (string.constructor === Array) {
-            return 'array';
-        }
-        if (string.constructor === Object) {
-            return 'object';
-        }
-        if (string.constructor === Function) {
-            return 'function';
-        }
-        if (string.constructor === Boolean) {
-            return 'boolean';
-        }
-        if (string.constructor === RegExp) {
-            return 'regexp';
-        }
-    };
+    // CSS3 Animator.
+    ally.extend({
+        transform: function () {
+            // Save the property, value, and duration for quicker access.
+            var property = arguments[0];
+            var value = arguments[1];
+            var duration = arguments[2];
 
-    ally.check = function (item) {
-        if (item || item === "" || item === 0) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+            // Adjust.
+            if (!property || !value) throw new Error('No property/value.');
+            if (!is(duration)) duration = 1000;
+            if (duration === "slow") duration = 1500;
+            if (duration === "fast") duration = 500;
 
-    ally.time = function (useAMPM) {
-        $me = {};
-        $me.d = new Date();
-        $me.hours = $me.d.getHours();
-        $me.minutes = $me.d.getMinutes();
-        $me.ampm = '';
-        if ($me.hours === 0) {
-            $me.hours = 12;
-            $me.ampm = 'AM';
-        } else if ($me.hours < 12 && useAMPM) {
-            $me.ampm = ' AM';
-        } else if ($me.hours >= 12 && useAMPM) {
-            $me.hours = $me.hours - 12;
-            $me.ampm = ' PM';
-        }
-        if ($me.minutes < 10) {
-            $me.minutes = "0" + $me.minutes;
-        }
-        return $me.hours + ":" + $me.minutes + $me.ampm;
-    };
+            // Set the transition property.
+            this.css('transition', 'All ' + duration + 'ms ease');
+            this.css('-webkit-transition', 'All ' + duration + 'ms ease');
+            this.css('-moz-transition', 'All ' + duration + 'ms ease');
+            this.css('-o-transition', 'All ' + duration + 'ms ease');
 
-    ally.date = function (formatted) {
-        $me = {};
-        $me.d = new Date();
-        $me.day = $me.d.getDay();
-        $me.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        $me.month = $me.d.getMonth();
-        $me.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        $me.date = $me.d.getDate();
-        $me.year = $me.d.getFullYear();
-        if (formatted) {
-            return $me.days[$me.day] + ', ' + $me.months[$me.month] + ' ' + $me.date + ' ' + $me.year;
-        } else {
-            return $me.month + 1 + "/" + $me.date + "/" + $me.year;
+            // Set the transform property.
+            this.css('transform', property + '(' + value + ')');
+            this.css('-webkit-transform', property + '(' + value + ')');
+            this.css('-moz-transform', property + '(' + value + ')');
+            this.css('-o-transform', property + '(' + value + ')');
         }
-    };
+    });
 
-    (function () {
-        var $me = {};
-        $me.ua = navigator.userAgent;
-        $me.chrome = $me.ua.indexOf('Chrome');
-        $me.safari = $me.ua.indexOf('Safari');
-        $me.webkit = $me.ua.indexOf('AppleWebKit');
-        $me.firefox = $me.ua.indexOf('Firefox');
-        $me.opera = $me.ua.indexOf('Opera');
-        $me.ie = $me.ua.indexOf('MSIE');
-        $me.version = $me.ua.indexOf('Version');
-        $me.windows = $me.ua.indexOf('Windows NT');
-        $me.mac = $me.ua.indexOf('Mac OS X');
-        $me.ubuntu = $me.ua.indexOf('Ubuntu');
-        $me.iPhone = $me.ua.indexOf('iPhone OS');
-        $me.iPad = $me.ua.indexOf('iPad');
-        $me.iPadVersion = $me.ua.indexOf('CPU OS');
-        $me.windowsphone = $me.ua.indexOf('Windows Phone OS');
-        $me.android = $me.ua.indexOf('Android');
-        $me.googleTV = $me.ua.indexOf('GoogleTV');
-        $me.webOS = $me.ua.lastIndexOf('webOS');
-        $me.TV = $me.ua.indexOf('Large Screen');
-        $me.mobile = $me.ua.indexOf('Mobile');
-        if ($me.chrome != -1) {
-            ally.chrome = parseFloat($me.ua[$me.chrome + 7] + $me.ua[$me.chrome + 8] + $me.ua[$me.chrome + 9]);
-        }
-        if ($me.safari != -1 && $me.chrome === -1) {
-            ally.safari = parseFloat($me.ua[$me.version + 8] + $me.ua[$me.version + 9] + $me.ua[$me.version + 10]);
-        }
-        if ($me.webkit != -1) {
-            ally.webkit = parseFloat($me.ua[$me.webkit + 12] + $me.ua[$me.webkit + 13] + $me.ua[$me.webkit + 14] + $me.ua[$me.webkit + 15] + $me.ua[$me.webkit + 16] + $me.ua[$me.webkit + 17]);
-        }
-        if ($me.firefox != -1) {
-            ally.firefox = parseFloat($me.ua[$me.firefox + 8] + $me.ua[$me.firefox + 9] + $me.ua[$me.firefox + 10]);
-        }
-        if ($me.opera != -1) {
-            ally.opera = parseFloat($me.ua[$me.version + 8] + $me.ua[$me.version + 9] + $me.ua[$me.version + 10] + $me.ua[$me.version + 11] + $me.ua[$me.version + 12]);
-        }
-        if ($me.ie != -1 && $me.windowsphone === -1) {
-            ally.ie = parseFloat($me.ua[$me.ie + 5]);
-        }
-        if ($me.windows != -1) {
-            ally.windows = parseFloat($me.ua[$me.windows + 11] + $me.ua[$me.windows + 12] + $me.ua[$me.windows + 13]);
-        }
-        if ($me.mac != -1 && $me.iPhone === -1 && $me.iPad === -1) {
-            ally.mac = parseFloat($me.ua[$me.mac + 12] + '.' + $me.ua[$me.mac + 14]);
-        }
-        if ($me.ubuntu != -1) {
-            ally.ubuntu = parseFloat($me.ua[$me.ubuntu + 7] + $me.ua[$me.ubuntu + 8] + $me.ua[$me.ubuntu + 9] + $me.ua[$me.ubuntu + 10] + $me.ua[$me.ubuntu + 11]);
-        }
-        if ($me.iPhone != -1) {
-            ally.iPhone = parseFloat($me.ua[$me.iPhone + 10] + '.' + $me.ua[$me.iPhone + 12]);
-        }
-        if ($me.iPad != -1) {
-            ally.iPad = parseFloat($me.ua[$me.iPadVersion + 7] + '.' + $me.ua[$me.iPadVersion + 9]);
-        }
-        if ($me.windowsphone != -1) {
-            ally.windowsphone = parseFloat($me.ua[$me.windowsphone + 17] + $me.ua[$me.windowsphone + 18] + $me.ua[$me.windowsphone + 19]);
-        }
-        if ($me.android != -1) {
-            ally.android = parseFloat($me.ua[$me.android + 8] + $me.ua[$me.android + 9] + $me.ua[$me.android + 10]);
-        }
-        if ($me.googleTV != -1) {
-            ally.googleTV = true;
-        }
-        if ($me.webOS != -1) {
-            ally.webOS = parseFloat($me.ua[$me.webOS + 6] + $me.ua[$me.webOS + 7] + $me.ua[$me.webOS + 8]);
-        }
-        if ($me.TV != -1) {
-            ally.TV = true;
-        }
-        if ($me.mobile != -1) {
-            ally.mobile = true;
-        }
-    })()
-
-    window.$ = window.ally = ally;
-
-})()
+    // Now that I'm done, expose Ally to the global object.
+    window.Ally = window.ally = window.$ = ally;
+})(window);
