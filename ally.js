@@ -1,67 +1,69 @@
 // Ally Selector and Toolkit;
-// v0.5.35;
+// v0.6.130;
 
 // Copyright 2010 McKayla Washburn;
 // Development started on August 30th 2010;
-// This toolkit has been tested in Chrome 6, Safari 5, Opera 10.5, and Firefox 3.6;
+// This toolkit has been tested in Chrome 6, Opera 10.5, and Firefox 3.6;
+// If compatibility is your first priority you may want to consider Dojo at http://www.dojotoolkit.org/;
 // Other browser's and previous versions of these browser are not guarenteed to work correctly;
-// This toolkit HAS NOT been tested in Internet Explorer;
+// This toolkit DOES NOT work in Internet Explorer;
 
-var local = localStorage;
 var ally = new Object();
-ally.InitialInterval = setInterval('ally.Initial();', 50);
+ally.local = localStorage;
+ally.version = 0.6;
+ally.build = 130;
+ally.fs = new Object();
 ally.Initial = function () {
     if (document.readyState == "complete") {
-        setInterval('ally.timeOnPage++;', 1000);
-        clearInterval(ally.InitialInterval);
-        ally.browser();
-        ally.os();
         if (ally.onload) {
             ally.onload();
         }
+        ally.browser();
+        ally.os();
+        clearInterval(ally.InitialInterval);
     }
 };
-ally.version = 0.5;
-ally.build = 35;
-ally.selector;
-ally.elementNum;
+ally.InitialInterval = setInterval('ally.Initial();', 50);
 ally.get = function (selector) {
-    ally.selector = selector;
-    if (ally.selector.indexOf(':') != -1) {
-        numberstart = ally.selector.indexOf(':');
-        numberlength = ally.selector.length - numberstart - 1;
-        if (numberlength == 1) {
-            ally.elementnum = ally.selector[numberstart + 1];
-            ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+    if (selector) {
+        ally.selector = selector;
+        if (ally.selector.indexOf(':') != -1) {
+            numberstart = ally.selector.indexOf(':');
+            numberlength = ally.selector.length - numberstart - 1;
+            if (numberlength == 1) {
+                ally.elementnum = ally.selector[numberstart + 1];
+                ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+            }
+            if (numberlength == 2) {
+                ally.elementnum = ally.selector[numberstart + 1] + ally.selector[numberstart + 2];
+                ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+            }
+            if (numberlength == 3) {
+                ally.elementnum = ally.selector[numberstart + 1] + ally.selector[numberstart + 2] + ally.selector[numberstart + 3];
+                ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+            }
+            ally.elementnum = parseFloat(ally.elementnum);
+        } else {
+            ally.elementnum = 0;
         }
-        if (numberlength == 2) {
-            ally.elementnum = ally.selector[numberstart + 1] + ally.selector[numberstart + 2];
-            ally.selector = ally.selector.replace(':' + ally.elementnum, '');
+        if (ally.selector.indexOf('.') == 0) {
+            ally.selector = ally.selector.replace('.', '');
+            ally.element = document.getElementsByClassName(ally.selector)[ally.elementnum];
+            ally.selector = "." + ally.selector;
+        } else if (ally.selector.indexOf('#') == 0) {
+            ally.selector = ally.selector.replace('#', '');
+            ally.element = document.getElementById(ally.selector);
+            ally.selector = "#" + ally.selector;
+        } else if (ally.selector.indexOf('*') == 0) {
+            ally.element = document.getElementsByTagName('body')[0];
+        } else {
+            ally.element = document.getElementsByTagName(ally.selector)[ally.elementnum];
         }
-        if (numberlength == 3) {
-            ally.elementnum = ally.selector[numberstart + 1] + ally.selector[numberstart + 2] + ally.selector[numberstart + 3];
-            ally.selector = ally.selector.replace(':' + ally.elementnum, '');
-        }
-        ally.elementnum = parseFloat(ally.elementnum);
+        return ally;
     } else {
-        ally.elementnum = 0;
+        return ally;
     }
-    if (ally.selector.indexOf('.') == 0) {
-        ally.selector = ally.selector.replace('.', '');
-        ally.element = document.getElementsByClassName(ally.selector)[ally.elementnum];
-        ally.selector = "." + ally.selector;
-    } else if (ally.selector.indexOf('#') == 0) {
-        ally.selector = ally.selector.replace('#', '');
-        ally.element = document.getElementById(ally.selector);
-        ally.selector = "#" + ally.selector;
-    } else if (ally.selector.indexOf('*') == 0) {
-        ally.element = document.getElementsByTagName('body')[0];
-    } else {
-        ally.element = document.getElementsByTagName(ally.selector)[ally.elementnum];
-    }
-    return ally;
 };
-ally.NewElement;
 ally.add = function (type, selector) {
     if (type) {
         ally.NewElement = document.createElement(type);
@@ -91,8 +93,12 @@ ally.add = function (type, selector) {
     }
 };
 ally.remove = function () {
-    parent = ally.element.parentNode;
-    parent.removeChild(ally.element);
+    if (ally.element) {
+        parent = ally.element.parentNode;
+        parent.removeChild(ally.element);
+    } else {
+        return "No element defined";
+    }
 };
 ally.html = function (html) {
     if (html) {
@@ -103,71 +109,125 @@ ally.html = function (html) {
     }
 };
 ally.value = function (value) {
-    if (value) {
-        ally.element.value = value;
-        return ally.element.value;
+    if (ally.element) {
+        if (value) {
+            ally.element.value = value;
+            return ally.element.value;
+        } else {
+            return ally.element.value;
+        }
     } else {
-        return ally.element.value;
+        return "No element to read."
     }
 };
 ally.empty = function () {
     if (ally.element) {
         ally.element.innerHTML = '';
-        return ally.element;
+        return ally.element.innerHTML;
     } else {
-        return "No object to empty.";
+        return "No element to empty."
     }
 };
-ally.attr = ally.attribute;
-ally.attribute = function (attribute, value) {
-    if (attribute) {
-        if (value) {
-            if (value != 'remove') {
-                ally.element.setAttribute(attribute, value);
-                return ally.element.getAttribute(attribute);
+ally.attr = function (attribute, value) {
+    if (ally.element) {
+        if (attribute) {
+            if (value) {
+                if (value != 'remove') {
+                    ally.element.setAttribute(attribute, value);
+                    return ally.element.getAttribute(attribute);
+                } else {
+                    ally.element.removeAttribute(attribute);
+                }
             } else {
-                ally.element.removeAttribute(attribute);
+                return ally.element.getAttribute(attribute);
             }
         } else {
-            return ally.element.getAttribute(attribute);
+            return "Please define an attribute to read.";
         }
     } else {
-        return "Please define an attribute to read.";
+        return "No element to read.";
     }
 };
 ally.storeAs = function (key) {
-    if (key) {
-        if (!ally.element.value) {
-            local.setItem(key, ally.element.innerHTML);
-            return local.getItem(key);
+    if (ally.element) {
+        if (key) {
+            if (!ally.element.value) {
+                ally.local.setItem(key, ally.element.innerHTML);
+                return ally.local.getItem(key);
+            } else {
+                ally.local.setItem(key, ally.element.value);
+                return ally.local.getItem(key);
+            }
         } else {
-            local.setItem(key, ally.element.value);
-            return local.getItem(key);
+            return "Please define a key to store the HTML as.";
         }
     } else {
-        return "Please define a key to store the HTML as.";
+        return "No element to read.";
     }
 };
 ally.css = function (property, value) {
-    if (property) {
-        if (value) {
-            if (value != 'remove') {
-                ally.element.style.setProperty(property, value);
-                return ally.element.style.getPropertyValue(property);
+    if (ally.element) {
+        if (property) {
+            if (value) {
+                if (value != 'remove') {
+                    ally.element.style.setProperty(property, value);
+                    return ally.element.style.getPropertyValue(property);
+                } else {
+                    ally.element.style.removeProperty(property);
+                }
             } else {
-                ally.element.style.removeProperty(property);
+                return ally.element.style.getPropertyValue(property);
+            }
+        }
+    } else {
+        return "No element to read.";
+    }
+};
+ally.animate = function (property, value) {
+    if (ally.element) {
+        if (property) {
+            if (value) {
+                ally.fs.animate = new Object();
+                ally.fs.animate.calledProperty = property;
+                ally.fs.animate.calledValue = value;
+                if (ally.element.style.getPropertyValue(property)) {
+                    ally.fs.animate.originalvalue = parseFloat(ally.element.style.getPropertyValue(property));
+                } else {
+                    ally.fs.animate.originalvalue = 0;
+                }
+                ally.fs.animate.unit = value.replace(parseFloat(value), '');
+                ally.fs.animate.value = parseFloat(value);
+                if (ally.fs.animate.originalvalue < ally.fs.animate.value) {
+                    ally.fs.animate.distanceperframe = (ally.fs.animate.value - ally.fs.animate.originalvalue) / 60;
+                    ally.fs.animate.newvalue = Math.round(ally.fs.animate.originalvalue) + Math.round(ally.fs.animate.distanceperframe);
+                    ally.element.style.setProperty(property, ally.fs.animate.newvalue + ally.fs.animate.unit);
+                    setTimeout('ally.animate(ally.fs.animate.calledProperty,ally.fs.animate.calledValue)', 10);
+                } else if (ally.fs.animate.originalvalue > ally.fs.animate.value) {
+                    ally.fs.animate.distanceperframe = (ally.fs.animate.value + ally.fs.animate.originalvalue) / 60;
+                    ally.fs.animate.newvalue = Math.round(ally.fs.animate.originalvalue) - Math.round(ally.fs.animate.distanceperframe);
+                    ally.element.style.setProperty(property, ally.fs.animate.newvalue + ally.fs.animate.unit);
+                    setTimeout('ally.animate(ally.fs.animate.calledProperty,ally.fs.animate.calledValue)', 10);
+                }
+            } else {
+                return "This is for animating CSS changes. If you want t retrieve a CSS value then please use ally.css.";
             }
         } else {
-            return ally.element.style.getPropertyValue(property);
+            return "Please define a property.";
         }
+    } else {
+        return "No element to read.";
     }
 };
 ally.addClass = function (class) {
-    if (class) {
-        ally.element.className = ally.element.className + " " + class;
-        return ally.element.className;
+    if (ally.element) {
+        if (class) {
+            ally.element.className = ally.element.className + " " + class;
+            return ally.element.className;
+        } else {
+            return "Please define a class.";
+        }
     } else {
-        return "Please define a class.";
+        return "No element to read."
     }
 };
 ally.removeClass = function (class) {
@@ -178,7 +238,6 @@ ally.removeClass = function (class) {
         return "Please define a class.";
     }
 };
-ally.XMLInterval;
 ally.open = function (url, method, async) {
     if (!url) {
         return "Please specify a file URL";
@@ -192,14 +251,70 @@ ally.open = function (url, method, async) {
     ally.XML = new XMLHttpRequest();
     ally.XML.open(method, url, async);
     ally.XML.send();
-    ally.XMLInterval = setInterval('AllyOpenXML();', 500);
+    ally.XMLInterval = setInterval('ally.openHTML();', 500);
 };
-ally.script = function () {
+ally.openHTML = function () {
+    if (ally.XML.status == 200) {
+        if (ally.element) {
+            ally.element.innerHTML = ally.XML.responseText;
+        }
+        clearInterval(ally.XMLInterval);
+    } else if (ally.XML.status == 404) {
+        if (ally.element) {
+            ally.element.innerHTML = "Sorry. :( We couldn't load the file you wanted. (" + ally.XML.status + ')';
+        }
+        clearInterval(ally.XMLInterval);
+    } else {
+        if (ally.element) {
+            ally.element.innerHTML = "Loading..";
+        }
+    }
+};
+ally.script = function (url, method, async) {
+    if (!url) {
+        return "Please specify a file URL";
+    }
+    if (!method) {
+        method = "GET";
+    }
+    if (!async) {
+        async = false;
+    }
+    ally.XML = new XMLHttpRequest();
+    ally.XML.open(method, url, async);
+    ally.XML.send();
+    ally.XMLInterval = setInterval('ally.openScript();', 500);
+};
+ally.openScript = function () {
     if (ally.XML.status == 200) {
         eval(ally.XML.responseText);
         clearInterval(ally.XMLInterval);
     } else if (ally.XML.status == 404) {
         alert("This page was trying to load a script but it didn't load correctly. If something doesn't work, then refresh the page and hope you don't get this error again.");
+        clearInterval(ally.XMLInterval);
+    }
+};
+ally.retrieve = function (url, method, async) {
+    if (!url) {
+        return "Please specify a file URL";
+    }
+    if (!method) {
+        method = "GET";
+    }
+    if (!async) {
+        async = false;
+    }
+    ally.XML = new XMLHttpRequest();
+    ally.XML.open(method, url, async);
+    ally.XML.send();
+    ally.XMLInterval = setInterval('ally.openOther();', 500);
+    return ally.XML;
+};
+ally.openOther = function () {
+    if (ally.XML.status == 200) {
+        clearInterval(ally.XMLInterval);
+    } else if (ally.XML.status == 404) {
+        alert("This page was trying to load something but it didn't load correctly. If something doesn't work, then refresh the page and hope you don't get this error again.");
         clearInterval(ally.XMLInterval);
     }
 };
@@ -280,36 +395,4 @@ ally.os = function () {
     }
 };
 ally.timeOnPage = 0;
-
-function AllyOpenScript(url, method, async) {
-    if (!url) {
-        return "Please specify a file URL";
-    }
-    if (!method) {
-        method = "GET";
-    }
-    if (!async) {
-        async = false;
-    }
-    ally.XML = new XMLHttpRequest();
-    ally.XML.open(method, url, async);
-    ally.XML.send();
-    ally.XMLInterval = setInterval('AllyOpenScript()', 500);
-}
-function AllyOpenXML() {
-    if (ally.XML.status == 200) {
-        if (ally.element) {
-            ally.element.innerHTML = ally.XML.responseText;
-        }
-        clearInterval(ally.XMLInterval);
-    } else if (ally.XML.status == 404) {
-        if (ally.element) {
-            ally.element.innerHTML = "Sorry. :( We couldn't load the file you wanted. (" + ally.XML.status + ')';
-        }
-        clearInterval(ally.XMLInterval);
-    } else {
-        if (ally.element) {
-            ally.element.innerHTML = "Loading..";
-        }
-    }
-};
+setInterval('ally.timeOnPage++;', 1000);
