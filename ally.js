@@ -1,345 +1,337 @@
 /*
-  Ally Toolkit 0.8.95. Copyright 2010 McKayla Washburn.
+  Ally Toolkit 0.9.64. Copyright 2010 McKayla Washburn.
 */
 
-var ally = new Object();
+ally = function (selector) {
+    return ally.get(selector)
+};
 ally.storage = localStorage;
-ally.version = 0.8;
-ally.build = 95;
-ally.fs = new Object();
+ally.version = 0.9;
+ally.build = 64;
+$fs = new Object();
 ally.Initial = function () {
     if (document.readyState == "complete") {
         if (ally.onload) {
             ally.onload()
         }
-        clearInterval(ally.InitialInterval)
+        if (window.initial) {
+            window.initial()
+        }
+        clearInterval(ally.InitialInterval);
+        delete ally.InitialInterval
     }
 };
 ally.InitialInterval = setInterval('ally.Initial();', 50);
+ally.timeOnPage = 0;
+setInterval('ally.timeOnPage++;', 1000);
 ally.config = new Object();
+ally.config.returnarrays;
+ally.config.returnonly1;
+ally.config.$ = function () {
+    $ = ally;
+    return $
+};
+ally.plugins = new Array();
+ally.plugins.addPlugin = function (pluginname, pluginversion, minimumallyversion, plugincode) {
+    if (minimumallyversion <= ally.version) {
+        ally.plugins.push(pluginname + "/" + pluginversion);
+        ally[pluginname] = plugincode;
+        return true
+    } else {
+        return false
+    }
+};
+ally.plugins.ur = function (statement) {
+    if (statement.length > 1 || ally.config.returnarrays) {
+        if (!ally.config.returnonly1) {
+            return statement
+        } else {
+            return statement[0]
+        }
+    } else {
+        return statement[0]
+    }
+};
+ally.plugins.noelems = "No element(s) selected.";
+ally.plugins.noargs = "Not enough arguement(s).";
+ally.forEach = function (array, code) {
+    $fs.foreach = new Object();
+    if (array) {
+        if (code) {
+            $fs.foreach.array = array;
+            $fs.foreach.position = 0;
+            $fs.foreach.returnedarray = new Array();
+            while (array[$fs.foreach.position]) {
+                $fs.foreach.selected = array[$fs.foreach.position];
+                $fs.foreach.returnedvalue = "";
+                code();
+                $fs.foreach.returnedarray[$fs.foreach.position] = $fs.foreach.returnedvalue;
+                $fs.foreach.position++
+            }
+            return $fs.foreach.returnedarray
+        }
+    }
+};
 ally.get = function (selector) {
     if (selector) {
-        ally.selector = selector;
-        ally.elements = document.querySelectorAll(ally.selector)
+        ally.elements = document.querySelectorAll(selector)
+    }
+    return ally
+};
+ally.getOne = function (number) {
+    if (number) {
+        if (ally.elements[number]) {
+            ally.elements = ally.elements[number]
+        }
+    }
+    return ally
+};
+ally.getMore = function (selector) {
+    if (selector) {
+        ally.fuse([ally.elements, document.querySelectorAll(selector)])
     }
     return ally
 };
 ally.add = function (type, selector) {
-    if (ally.elements) {
-        ally.fs.add = new Object();
-        ally.newElements = new Array();
-        ally.fs.add.elementnumber = 0;
-        if (type) {
-            ally.fs.add.newElementType = type
-        }
-        if (!type) {
-            ally.fs.add.parenttype = ally.elements[0].tagName;
-            if (ally.fs.add.parenttype == "BODY") {
-                ally.fs.add.newElementType = 'div'
-            } else if (ally.fs.add.parenttype == "P" || ally.fs.add.parenttype == "A" || ally.fs.add.parenttype == "SPAN") {
-                ally.fs.add.newElementType = 'span'
-            } else {
-                ally.fs.add.newElementType = 'p'
-            }
-        }
-        while (ally.elements[ally.fs.add.elementnumber]) {
-            ally.newElements[ally.fs.add.elementnumber] = document.createElement(ally.fs.add.newElementType);
-            ally.elements[ally.fs.add.elementnumber].appendChild(ally.newElements[ally.fs.add.elementnumber]);
-            if (selector) {
-                if (selector.indexOf('#') == 0) {
-                    ally.fs.add.selector = selector.replace('#', '');
-                    if (ally.fs.add.elementnumber == 0) {
-                        ally.newElements[ally.fs.add.elementnumber].id = ally.fs.add.selector
-                    } else {
-                        ally.newElements[ally.fs.add.elementnumber].id = ally.fs.add.selector + "-" + ally.fs.add.elementnumber
-                    }
-                }
-                if (selector.indexOf('.') == 0) {
-                    ally.fs.add.selector = selector.replace('.', '');
-                    ally.newElements[ally.fs.add.elementnumber].className = " " + ally.fs.add.selector
-                }
-            }
-            ally.fs.add.elementnumber++
-        }
-        if (ally.newElements.length > 1) {
-            return ally.newElements
-        } else {
-            return ally.newElements[0]
-        }
-    } else {
-        return "No element(s) defined."
+    if (!ally.elements) {
+        ally.get('body')
     }
+    $fs.add = new Object();
+    ally.newElements = new Array();
+    if (!type) {
+        $fs.add.parenttype = ally.elements[0].tagName;
+        if ($fs.add.parenttype == "BODY") {
+            type = 'div'
+        } else if ($fs.add.parenttype == "P" || $fs.add.parenttype == "A" || $fs.add.parenttype == "SPAN") {
+            type = 'span'
+        } else {
+            type = 'p'
+        }
+    }
+    ally.forEach(ally.elements, function () {
+        ally.newElements[$fs.foreach.position] = document.createElement(type);
+        $fs.foreach.selected.appendChild(ally.newElements[$fs.foreach.position]);
+        if (selector) {
+            if (selector.indexOf('#') == 0) {
+                if ($fs.foreach.position == 0) {
+                    ally.newElements[$fs.foreach.position].id = selector.replace('#', '')
+                } else {
+                    ally.newElements[$fs.foreach.position].id = selector.replace('#', '') + "-" + $fs.foreach.position
+                }
+            }
+            if (selector.indexOf('.') == 0) {
+                ally.newElements[$fs.foreach.position].className = " " + selector.replace('.', '')
+            }
+        }
+    });
+    return ally.plugins.ur(ally.newElements)
 };
 ally.remove = function () {
     if (ally.elements) {
-        ally.fs.remove = new Object();
-        ally.fs.remove.elementnumber = 0;
-        while (ally.elements[ally.fs.remove.elementnumber]) {
-            ally.fs.remove.parent = ally.elements[ally.fs.remove.elementnumber].parentNode;
-            ally.fs.remove.parent.removeChild(ally.elements[ally.fs.remove.elementnumber]);
-            ally.fs.remove.elementnumber++
-        }
+        ally.forEach(ally.elements, function () {
+            $fs.foreach.selected.parentNode.removeChild($fs.foreach.selected)
+        })
     } else {
-        return "No element(s) defined."
+        return ally.plugins.noelems
     }
 };
 ally.html = function (html) {
+    $fs.html = new Object();
     if (ally.elements) {
-        ally.fs.html = new Object();
-        ally.fs.html.allhtml = new Array();
-        ally.fs.html.elementnumber = 0;
         if (html) {
-            while (ally.elements[ally.fs.html.elementnumber]) {
-                ally.elements[ally.fs.html.elementnumber].innerHTML = html;
-                ally.fs.html.allhtml[ally.fs.html.elementnumber] = html;
-                ally.fs.html.elementnumber++
-            }
+            $fs.html.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.selected.innerHTML = html;
+                $fs.foreach.returnedvalue = $fs.foreach.selected.innerHTML
+            })
         } else {
-            while (ally.elements[ally.fs.html.elementnumber]) {
-                ally.fs.html.allhtml[ally.fs.html.elementnumber] = ally.elements[ally.fs.html.elementnumber].innerHTML;
-                ally.fs.html.elementnumber++
-            }
+            $fs.html.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.returnedvalue = $fs.foreach.selected.innerHTML
+            })
         }
-        if (ally.fs.html.allhtml.length > 1) {
-            return ally.fs.html.allhtml
-        } else {
-            return ally.fs.html.allhtml[0]
-        }
+        return ally.plugins.ur($fs.html.returned)
     } else {
-        return "No element(s) defined."
+        return ally.plugins.noelems
     }
 };
 ally.value = function (value) {
+    $fs.value = new Object();
     if (ally.elements) {
-        ally.fs.value = new Object();
-        ally.fs.value.allvalues = new Array();
-        ally.fs.value.elementnumber = 0;
         if (value) {
-            while (ally.elements[ally.fs.value.elementnumber]) {
-                ally.elements[ally.fs.value.elementnumber].value = value;
-                ally.fs.value.allvalues[ally.fs.value.elementnumber] = value;
-                ally.fs.value.elementnumber++
-            }
+            $fs.value.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.selected.value = value;
+                $fs.foreach.returnedvalue = $fs.foreach.selected.value
+            })
         } else {
-            while (ally.elements[ally.fs.value.elementnumber]) {
-                ally.fs.value.allvalues[ally.fs.value.elementnumber] = ally.elements[ally.fs.value.elementnumber].value;
-                ally.fs.value.elementnumber++
-            }
+            $fs.value.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.returnedvalue = $fs.foreach.selected.value
+            })
         }
-        if (ally.fs.value.allvalues.length > 1) {
-            return ally.fs.value.allvalues
-        } else {
-            return ally.fs.value.allvalues[0]
-        }
+        return ally.plugins.ur($fs.value.returned)
     } else {
-        return "No element(s) defined."
+        return ally.plugins.noelems
     }
 };
 ally.empty = function () {
+    $fs.empty = new Object();
     if (ally.elements) {
-        ally.fs.empty = new Object();
-        ally.fs.empty.allhtml = new Array();
-        ally.fs.empty.elementnumber = 0;
-        while (ally.elements[ally.fs.empty.elementnumber]) {
-            ally.elements[ally.fs.empty.elementnumber].innerHTML = "";
-            ally.fs.empty.allhtml[ally.fs.empty.elementnumber] = "";
-            ally.fs.empty.elementnumber++
-        }
-        if (ally.fs.empty.allhtml.length > 1) {
-            return ally.fs.empty.allhtml
-        } else {
-            return ally.fs.empty.allhtml[0]
-        }
+        $fs.empty.returned = ally.forEach(ally.elements, function () {
+            $fs.foreach.selected.innerHTML = "";
+            $fs.foreach.returnedvalue = $fs.foreach.selected.innerHTML
+        });
+        return ally.plugins.ur($fs.empty.returned)
     } else {
-        return "No element(s) defined."
+        return ally.plugins.noelems
     }
 };
 ally.attr = function (attribute, value) {
+    $fs.attr = new Object();
     if (ally.elements) {
         if (attribute) {
-            ally.fs.attr = new Object();
-            ally.fs.attr.allattrs = new Array();
-            ally.fs.attr.elementnumber = 0;
             if (value) {
-                while (ally.elements[ally.fs.attr.elementnumber]) {
-                    if (value != 'remove') {
-                        ally.elements[ally.fs.attr.elementnumber].setAttribute(attribute, value);
-                        ally.fs.attr.allattrs[ally.fs.attr.elementnumber] = ally.elements[ally.fs.attr.elementnumber].getAttribute(attribute)
-                    } else {
-                        ally.elements[ally.fs.attr.elementnumber].removeAttribute(attribute);
-                        ally.fs.attr.allattrs[ally.fs.attr.elementnumber] = ally.elements[ally.fs.attr.elementnumber].getAttribute(attribute)
-                    }
-                    ally.fs.attr.elementnumber++
-                }
+                $fs.attr.returned = ally.forEach(ally.elements, function () {
+                    $fs.foreach.selected.setAttribute(attribute, value);
+                    $fs.foreach.returnedvalue = $fs.foreach.selected.getAttribute(attribute)
+                })
             } else {
-                while (ally.elements[ally.fs.attr.elementnumber]) {
-                    ally.fs.attr.allattrs[ally.fs.attr.elementnumber] = ally.elements[ally.fs.attr.elementnumber].getAttribute(attribute);
-                    ally.fs.attr.elementnumber++
-                }
+                $fs.attr.returned = ally.forEach(ally.elements, function () {
+                    $fs.foreach.returnedvalue = $fs.foreach.selected.getAttribute(attribute)
+                })
             }
-            if (ally.fs.attr.allattrs.length > 1) {
-                return ally.fs.attr.allattrs
-            } else {
-                return ally.fs.attr.allattrs[0]
-            }
+            return ally.plugins.ur($fs.attr.returned)
         } else {
-            return "No attribute defined."
+            return ally.plugins.noargs
         }
     } else {
-        return "No element(s) defined."
+        return ally.plugins.noelems
     }
 };
-ally.storeAs = function (key) {
+ally.removeAttr = function (attribute) {
+    $fs.removeattr = new Object();
     if (ally.elements) {
-        if (key) {
-            ally.fs.storeas = new Object();
-            ally.fs.storeas.storedvalues = new Array();
-            ally.fs.storeas.elementnumber = 0;
-            while (ally.elements[ally.fs.storeas.elementnumber]) {
-                if (!ally.elements[ally.fs.storeas.elementnumber].value) {
-                    ally.fs.storeas.storedvalues[ally.fs.storeas.elementnumber] = ally.elements[ally.fs.storeas.elementnumber].innerHTML
-                } else {
-                    ally.fs.storeas.storedvalues[ally.fs.storeas.elementnumber] = ally.elements[ally.fs.storeas.elementnumber].value
-                }
-                ally.storage.setItem(key, ally.fs.storeas.storedvalues);
-                ally.fs.storeas.elementnumber++
-            }
-            if (ally.fs.storeas.storedvalues.length > 1) {
-                return ally.fs.storeas.storedvalues
-            } else {
-                return ally.fs.storeas.storedvalues[0]
-            }
+        if (attribute) {
+            $fs.removeattr.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.selected.removeAttribute(attribute);
+                $fs.foreach.returnedvalue = $fs.foreach.selected.getAttribute(attribute)
+            });
+            return ally.plugins.ur($fs.removeattr.returned)
         } else {
-            return "Please define a key to store the HTML as."
+            return ally.plugins.noargs
         }
     } else {
-        return "No element to read."
-    }
-};
-ally.css = function (property, value) {
-    if (ally.elements) {
-        if (property) {
-            ally.fs.css = new Object();
-            ally.fs.css.styles = new Array();
-            ally.fs.css.elementnumber = 0;
-            if (value) {
-                while (ally.elements[ally.fs.css.elementnumber]) {
-                    if (value != 'remove') {
-                        ally.elements[ally.fs.css.elementnumber].style.setProperty(property, value);
-                        ally.fs.css.styles[ally.fs.css.elementnumber] = ally.elements[ally.fs.css.elementnumber].style.getPropertyValue(property)
-                    } else {
-                        ally.elements[ally.fs.css.elementnumber].style.removeProperty(property);
-                        ally.fs.css.styles[ally.fs.css.elementnumber] = ally.elements[ally.fs.css.elementnumber].style.getPropertyValue(property)
-                    }
-                    ally.fs.css.elementnumber++
-                }
-            } else {
-                while (ally.elements[ally.fs.css.elementnumber]) {
-                    ally.fs.css.styles[ally.fs.css.elementnumber] = window.getComputedStyle(ally.elements[ally.fs.css.elementnumber]).getPropertyValue(property);
-                    ally.fs.css.elementnumber++
-                }
-            }
-            if (ally.fs.css.styles.length > 1) {
-                return ally.fs.css.styles
-            } else {
-                return ally.fs.css.styles[0]
-            }
-        } else {
-            return "No style defined."
-        }
-    } else {
-        return "No element(s) defined."
-    }
-};
-ally.animate = function (property, value) {
-    if (ally.elements) {
-        if (property) {
-            if (value) {
-                ally.fs.animate = new Object();
-                ally.fs.animate.calledProperty = property;
-                ally.fs.animate.calledValue = value;
-                ally.fs.animate.elementnumber = 0;
-                if (ally.elements[ally.fs.animate.elementnumber].style.getPropertyValue(property)) {
-                    ally.fs.animate.originalvalue = parseFloat(ally.elements[ally.fs.animate.elementnumber].style.getPropertyValue(property))
-                } else {
-                    ally.fs.animate.originalvalue = 0
-                }
-                ally.fs.animate.unit = value.replace(parseFloat(value), '');
-                ally.fs.animate.value = parseFloat(value);
-                while (ally.elements[ally.fs.animate.elementnumber]) {
-                    if (ally.fs.animate.originalvalue < ally.fs.animate.value) {
-                        ally.fs.animate.distanceperframe = (ally.fs.animate.value - ally.fs.animate.originalvalue) / 60 + 1;
-                        ally.fs.animate.newvalue = Math.round(ally.fs.animate.originalvalue) + Math.round(ally.fs.animate.distanceperframe);
-                        ally.elements[ally.fs.animate.elementnumber].style.setProperty(property, ally.fs.animate.newvalue + ally.fs.animate.unit)
-                    } else if (ally.fs.animate.originalvalue > ally.fs.animate.value) {
-                        ally.fs.animate.distanceperframe = (ally.fs.animate.value + ally.fs.animate.originalvalue) / 60 + 1;
-                        ally.fs.animate.newvalue = Math.round(ally.fs.animate.originalvalue) - Math.round(ally.fs.animate.distanceperframe);
-                        ally.elements[ally.fs.animate.elementnumber].style.setProperty(property, ally.fs.animate.newvalue + ally.fs.animate.unit)
-                    }
-                    if (ally.fs.animate.elementnumber == 0) {
-                        setTimeout('ally.animate(ally.fs.animate.calledProperty,ally.fs.animate.calledValue)', 10)
-                    }
-                    ally.fs.animate.elementnumber++
-                }
-            } else {
-                return "This is for animating CSS changes. If you want t retrieve a CSS value then please use ally.css."
-            }
-        } else {
-            return "Please define a property."
-        }
-    } else {
-        return "No element to read."
+        return ally.plugins.noelems
     }
 };
 ally.addClass = function (newclass) {
+    $fs.addclass = new Object();
     if (ally.elements) {
         if (newclass) {
-            ally.fs.addclass = new Object();
-            ally.fs.addclass.classes = new Array();
-            ally.fs.addclass.elementnumber = 0;
-            while (ally.elements[ally.fs.addclass.elementnumber]) {
-                ally.elements[ally.fs.addclass.elementnumber].className = ally.elements[ally.fs.addclass.elementnumber].className + " " + newclass;
-                ally.fs.addclass.classes[ally.fs.addclass.elementnumber] = ally.elements[ally.fs.addclass.elementnumber].className;
-                ally.fs.addclass.elementnumber++
-            }
-            if (ally.fs.addclass.classes.length > 1) {
-                return ally.fs.addclass.classes
-            } else {
-                return ally.fs.addclass.classes[0]
-            }
+            $fs.addclass.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.selected.className = $fs.foreach.selected.className + " " + newclass;
+                $fs.foreach.returnedvalue = $fs.foreach.selected.className
+            });
+            return ally.plugins.ur($fs.addclass.returned)
         } else {
-            return "Please define a class."
+            return ally.plugins.noargs
         }
     } else {
-        return "No element(s) defined."
+        return ally.plugins.noelems
     }
 };
 ally.removeClass = function (removingclass) {
+    $fs.addclass = new Object();
     if (ally.elements) {
         if (removingclass) {
-            ally.fs.removeclass = new Object();
-            ally.fs.removeclass.classes = new Array();
-            ally.fs.removeclass.elementnumber = 0;
-            while (ally.elements[ally.fs.removeclass.elementnumber]) {
-                ally.elements[ally.fs.removeclass.elementnumber].className = ally.elements[ally.fs.removeclass.elementnumber].className.replace(removingclass, '');
-                ally.fs.removeclass.classes[ally.fs.removeclass.elementnumber] = ally.elements[ally.fs.removeclass.elementnumber].className;
-                ally.fs.removeclass.elementnumber++
-            }
-            if (ally.fs.removeclass.classes.length > 1) {
-                return ally.fs.removeclass.classes
-            } else {
-                return ally.fs.removeclass.classes[0]
-            }
+            $fs.addclass.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.selected.className = $fs.foreach.selected.className.replace(removingclass, '');
+                $fs.foreach.returnedvalue = $fs.foreach.selected.className
+            });
+            return ally.plugins.ur($fs.addclass.returned)
         } else {
-            return "Please define a class."
+            return ally.plugins.noargs
         }
     } else {
-        return "No element(s) defined."
+        return ally.plugins.noelems
+    }
+};
+ally.css = function (property, value, priority) {
+    $fs.css = new Object();
+    if (!priority) {
+        priority = ""
+    }
+    if (ally.elements) {
+        if (property) {
+            if (value) {
+                $fs.css.returned = ally.forEach(ally.elements, function () {
+                    $fs.foreach.selected.style.setProperty(property, value, priority);
+                    $fs.foreach.returnedvalue = $fs.foreach.selected.style.getPropertyValue(property)
+                })
+            } else {
+                $fs.css.returned = ally.forEach(ally.elements, function () {
+                    $fs.foreach.returnedvalue = window.getComputedStyle($fs.foreach.selected, null).getPropertyValue(property)
+                })
+            }
+            return ally.plugins.ur($fs.css.returned)
+        } else {
+            return ally.plugins.noargs
+        }
+    } else {
+        return ally.plugins.noelems
+    }
+};
+ally.removeProperty = function (property) {
+    $fs.removeproperty = new Object();
+    if (ally.elements) {
+        if (property) {
+            $fs.removeproperty.returned = ally.forEach(ally.elements, function () {
+                $fs.foreach.returnedvalue = $fs.foreach.selected.style.removeProperty(property)
+            });
+            return ally.plugins.ur($fs.removeproperty.returned)
+        } else {
+            return ally.plugins.noargs
+        }
+    } else {
+        return ally.plugins.noelems
+    }
+};
+ally.animate = function (property, value) {
+    $fs.animate = new Object();
+    if (ally.elements) {
+        if (property) {
+            if (value) {
+                $fs.animate.calledProperty = property;
+                $fs.animate.calledValue = value;
+                if (window.getComputedStyle(ally.elements[0], null).getPropertyValue(property)) {
+                    $fs.animate.originalvalue = parseFloat(window.getComputedStyle(ally.elements[0], null).getPropertyValue(property))
+                } else {
+                    $fs.animate.originalvalue = 0
+                }
+                $fs.animate.unit = value.replace(parseFloat(value), '');
+                $fs.animate.value = parseFloat(value);
+                if ($fs.animate.originalvalue < $fs.animate.value) {
+                    $fs.animate.distanceperframe = ($fs.animate.value - $fs.animate.originalvalue) / 60 + 1;
+                    $fs.animate.newvalue = Math.round($fs.animate.originalvalue) + Math.round($fs.animate.distanceperframe);
+                    ally.css(property, $fs.animate.newvalue + $fs.animate.unit)
+                } else if ($fs.animate.originalvalue > $fs.animate.value) {
+                    $fs.animate.distanceperframe = ($fs.animate.value + $fs.animate.originalvalue) / 60 + 1;
+                    $fs.animate.newvalue = Math.round($fs.animate.originalvalue) - Math.round($fs.animate.distanceperframe);
+                    ally.css(property, $fs.animate.newvalue + $fs.animate.unit)
+                }
+                if ($fs.animate.originalvalue != $fs.animate.value) {
+                    setTimeout('ally.animate($fs.animate.calledProperty,$fs.animate.calledValue)', 10)
+                }
+            } else {
+                return ally.plugins.noargs
+            }
+        } else {
+            return ally.plugins.noargs
+        }
+    } else {
+        return ally.plugins.noelems
     }
 };
 ally.open = function (url, method, async) {
     if (!url) {
-        return "Please specify a file URL"
+        return ally.plugins.noargs
     }
     if (!method) {
         method = "GET"
@@ -350,52 +342,28 @@ ally.open = function (url, method, async) {
     ally.XML = new XMLHttpRequest();
     ally.XML.open(method, url, async);
     ally.XML.send();
-    ally.XMLInterval = setInterval('ally.openHTML();', 500)
-};
-ally.openHTML = function () {
-    if (ally.XML.status == 200) {
-        if (ally.elements) {
-            ally.html(ally.XML.responseText)
+    ally.XMLInterval = setInterval(function () {
+        if (ally.XML.status == 200) {
+            if (ally.elements) {
+                ally.html(ally.XML.responseText)
+            }
+            clearInterval(ally.XMLInterval)
+        } else if (ally.XML.status == 404) {
+            if (ally.elements) {
+                ally.html("Sorry. :( We couldn't load the file you wanted. (" + ally.XML.status + ')')
+            }
+            clearInterval(ally.XMLInterval)
+        } else {
+            if (ally.elements) {
+                ally.html("Loading..")
+            }
         }
-        clearInterval(ally.XMLInterval)
-    } else if (ally.XML.status == 404) {
-        if (ally.elements) {
-            ally.html("Sorry. :( We couldn't load the file you wanted. (" + ally.XML.status + ')')
-        }
-        clearInterval(ally.XMLInterval)
-    } else {
-        if (ally.elements) {
-            ally.html("Loading..")
-        }
-    }
-};
-ally.script = function (url, method, async) {
-    if (!url) {
-        return "Please specify a file URL"
-    }
-    if (!method) {
-        method = "GET"
-    }
-    if (!async) {
-        async = false
-    }
-    ally.XML = new XMLHttpRequest();
-    ally.XML.open(method, url, async);
-    ally.XML.send();
-    ally.XMLInterval = setInterval('ally.openScript();', 500)
-};
-ally.openScript = function () {
-    if (ally.XML.status == 200) {
-        eval(ally.XML.responseText);
-        clearInterval(ally.XMLInterval)
-    } else if (ally.XML.status == 404) {
-        alert("This page was trying to load a script but it didn't load correctly. D:" + "\b" + "If something doesn't work, then refresh the page and hope you don't get this error again.");
-        clearInterval(ally.XMLInterval)
-    }
+    }, 500);
+    return ally.XML
 };
 ally.retrieve = function (url, method, async, callback) {
     if (!url) {
-        return "Please specify a file URL"
+        return ally.plugins.noargs
     }
     if (!method) {
         method = "GET"
@@ -404,57 +372,144 @@ ally.retrieve = function (url, method, async, callback) {
         async = false
     }
     if (callback) {
-        ally.fs.retrieve = new Object();
-        ally.fs.retrieve.callback = callback
+        $fs.retrieve = new Object();
+        $fs.retrieve.callback = callback
     }
     ally.XML = new XMLHttpRequest();
     ally.XML.open(method, url, async);
     ally.XML.send();
-    ally.XMLInterval = setInterval('ally.openOther();', 500);
+    ally.XMLInterval = setInterval(function () {
+        if (ally.XML.status == 200) {
+            if ($fs.retrieve.callback) {
+                $fs.retrieve.callback()
+            }
+            clearInterval(ally.XMLInterval)
+        } else if (ally.XML.status == 404) {
+            alert("This page was trying to load something but it didn't load correctly. If something doesn't work, then refresh the page and hope you don't get this error again.");
+            clearInterval(ally.XMLInterval)
+        }
+    }, 500);
     return ally.XML
 };
-ally.openOther = function () {
-    if (ally.XML.status == 200) {
-        if (ally.fs.retrieve.callback) {
-            ally.fs.retrieve.callback()
-        }
-        clearInterval(ally.XMLInterval)
-    } else if (ally.XML.status == 404) {
-        alert("This page was trying to load something but it didn't load correctly. If something doesn't work, then refresh the page and hope you don't get this error again.");
-        clearInterval(ally.XMLInterval)
+ally.script = function (url, method, async) {
+    if (!url) {
+        return ally.plugins.noargs
     }
+    if (!method) {
+        method = "GET"
+    }
+    if (!async) {
+        async = false
+    }
+    ally.XML = new XMLHttpRequest();
+    ally.XML.open(method, url, async);
+    ally.XML.send();
+    ally.XMLInterval = setInterval(function () {
+        if (ally.XML.status == 200) {
+            eval(ally.XML.responseText);
+            clearInterval(ally.XMLInterval)
+        } else if (ally.XML.status == 404) {
+            alert("This page was trying to load a script but it didn\'t load correctly. D: If something doesn\'t work, then refresh the page and hope you don\'t get this error again.");
+            clearInterval(ally.XMLInterval)
+        }
+    }, 500)
+};
+ally.abs = function (number) {
+    if (number) {
+        if (number < 0) {
+            return number * -1
+        } else {
+            return number
+        }
+    }
+};
+ally.opp = function (number) {
+    if (number) {
+        return number * -1
+    }
+};
+ally.avg = function (numbers) {
+    if (numbers) {
+        $fs.avg = new Object();
+        $fs.avg.position = 0;
+        $fs.avg.total = 0;
+        ally.forEach(numbers, function () {
+            $fs.avg.total = $fs.avg.total + $fs.foreach.selected
+        });
+        return $fs.avg.total / (numbers.length)
+    }
+};
+ally.random = function (beginning, end) {
+    if (!beginning) {
+        beginning = 0
+    }
+    if (!end) {
+        end = 100
+    }
+    $fs.random = new Object();
+    $fs.random.range = end - beginning;
+    return $fs.random.random = Math.round((Math.random() * $fs.random.range) + beginning)
+};
+ally.fuse = function (values) {
+    if (values[0] && values[1] && typeof values == "object") {
+        $fs.fuse = new Object();
+        $fs.fuse.currentlength = 0;
+        $fs.fuse.product = values[0];
+        ally.forEach(values[0], function () {
+            $fs.fuse.currentlength++
+        });
+        ally.forEach(values[1], function () {
+            $fs.fuse.product[$fs.foreach.position + $fs.fuse.currentlength] = $fs.foreach.selected
+        });
+        return ally.plugins.ur($fs.fuse.product)
+    } else {
+        return ally.plugins.noargs
+    }
+};
+ally.event = function (event, script, capture) {
+    if (!capture) {
+        capture = false
+    }
+    ally.forEach(ally.elements, function () {
+        $fs.foreach.returnedvalue = $fs.foreach.selected.addEventListener(event, script, capture)
+    });
+    return ally.plugins.ur($fs.foreach.returnedarray)
 };
 ally.time = function (useAMPM) {
-    ally.fs.time = new Object;
-    ally.fs.time.d = new Date();
-    ally.fs.time.hours = ally.fs.time.d.getHours();
-    ally.fs.time.minutes = ally.fs.time.d.getMinutes();
-    ally.fs.time.ampm = '';
-    if (ally.fs.time.hours == 0) {
-        ally.fs.time.hours = 24
+    $fs.time = new Object();
+    $fs.time.d = new Date();
+    $fs.time.hours = $fs.time.d.getHours();
+    $fs.time.minutes = $fs.time.d.getMinutes();
+    $fs.time.ampm = '';
+    if ($fs.time.hours == 0) {
+        $fs.time.hours = 24
     }
-    if (ally.fs.time.hours < 12 && useAMPM) {
-        ally.fs.time.ampm = ' AM'
+    if ($fs.time.hours < 12 && useAMPM) {
+        $fs.time.ampm = ' AM'
     }
-    if (ally.fs.time.hours > 12 && useAMPM) {
-        ally.fs.time.hours = ally.fs.time.hours - 12;
-        ally.fs.time.ampm = ' PM'
+    if ($fs.time.hours > 12 && useAMPM) {
+        $fs.time.hours = $fs.time.hours - 12;
+        $fs.time.ampm = ' PM'
     }
-    if (ally.fs.time.minutes < 10) {
-        ally.fs.time.minutes = "0" + ally.fs.time.minutes
+    if ($fs.time.minutes < 10) {
+        $fs.time.minutes = "0" + $fs.time.minutes
     }
-    return ally.fs.time.hours + ":" + ally.fs.time.minutes + ally.fs.time.ampm
+    return $fs.time.hours + ":" + $fs.time.minutes + $fs.time.ampm
 };
-ally.date = function () {
-    ally.fs.date = new Object;
-    ally.fs.date.d = new Date();
-    ally.fs.date.day = ally.fs.date.d.getDay();
-    ally.fs.date.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    ally.fs.date.month = ally.fs.date.d.getMonth();
-    ally.fs.date.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    ally.fs.date.date = ally.fs.date.d.getDate();
-    ally.fs.date.year = ally.fs.date.d.getFullYear();
-    return ally.fs.date.days[ally.fs.date.day] + ', ' + ally.fs.date.months[ally.fs.date.month] + ' ' + ally.fs.date.date + ' ' + ally.fs.date.year
+ally.date = function (formated) {
+    $fs.date = new Object;
+    $fs.date.d = new Date();
+    $fs.date.day = $fs.date.d.getDay();
+    $fs.date.days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    $fs.date.month = $fs.date.d.getMonth();
+    $fs.date.months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    $fs.date.date = $fs.date.d.getDate();
+    $fs.date.year = $fs.date.d.getFullYear();
+    if (formated) {
+        return $fs.date.days[$fs.date.day] + ', ' + $fs.date.months[$fs.date.month] + ' ' + $fs.date.date + ' ' + $fs.date.year
+    } else {
+        return $fs.date.month + 1 + "/" + $fs.date.date + "/" + $fs.date.year
+    }
 };
 ally.ua = navigator.userAgent;
 ally.chrome = ally.ua.indexOf('Chrome');
@@ -500,5 +555,3 @@ if (ally.iPhone != -1) {
 if (ally.iPad != -1) {
     ally.iPad = parseFloat(ally.ua[ally.iPadVersion + 7] + ally.ua[ally.iPadVersion + 8] + ally.ua[ally.iPadVersion + 9])
 }
-ally.timeOnPage = 0;
-setInterval('ally.timeOnPage++;', 1000);
